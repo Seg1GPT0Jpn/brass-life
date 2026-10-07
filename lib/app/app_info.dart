@@ -1,2 +1,2 @@
 /// ビルドの表示用情報。
-const String appBuildLabel = 'Phase 4: オーディション・コンクール・幹部選出・定期演奏会';
+const String appBuildLabel = 'Phase 5: 高校受験と高校進学';

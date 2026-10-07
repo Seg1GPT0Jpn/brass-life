@@ -32,6 +32,12 @@ const Map<String, String> memoryTemplates = {
   'retired': '{actor}は部活を引退した',
   'concert_result': '{school}の定期演奏会に出演した（{rating}）',
   'concert_watched': '{school}の定期演奏会を見守った（{rating}）',
+  'exam_passed': '{school}に合格した',
+  'exam_failed': '{school}は不合格だった',
+  'recommended': '{school}への部活推薦を受けた',
+  'graduated_middle': '{school}を卒業した',
+  'entered_high': '{school}に入学し、吹奏楽部に入部した',
+  'reunited': '{school}で{target}と再会した',
 };
 
 String renderMemory(String reasonKey, Map<String, String> params) {

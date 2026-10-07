@@ -76,7 +76,10 @@ enum PendingEventType {
   audition('オーディション'),
   contest('コンクール'),
   executiveSelection('幹部選出'),
-  concert('定期演奏会');
+  concert('定期演奏会'),
+  recommendation('推薦の打診'),
+  examApplication('出願'),
+  notice('お知らせ');
 
   const PendingEventType(this.label);
   final String label;

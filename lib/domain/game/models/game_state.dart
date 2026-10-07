@@ -92,6 +92,15 @@ abstract class GameState with _$GameState {
 
     /// 年度更新などのターン開始処理を済ませた最後のターン。
     @Default(-1) int preparedTurn,
+
+    /// 進路（受験）の状況。
+    EntranceExamState? exam,
+
+    /// 卒業した NPC の進学先（NPC ID → 学校 ID）。
+    @Default(<String, String>{}) Map<String, String> npcDestinations,
+
+    /// プレイヤーが在籍した学校（古い順）。
+    @Default(<String>[]) List<String> schoolHistory,
   }) = _GameState;
 
   factory GameState.fromJson(Map<String, dynamic> json) =>
@@ -285,6 +294,33 @@ abstract class ContestStageResult with _$ContestStageResult {
 
   factory ContestStageResult.fromJson(Map<String, dynamic> json) =>
       _$ContestStageResultFromJson(json);
+}
+
+/// 受験の状況（高校受験・大学受験で共用）。
+@freezed
+abstract class EntranceExamState with _$EntranceExamState {
+  const factory EntranceExamState({
+    /// 'high'（高校受験）または 'university'（大学受験）。
+    required String kind,
+
+    /// 推薦の打診があった学校。
+    @Default(<String>[]) List<String> offers,
+
+    /// 推薦を受けて内定した学校。
+    String? recommended,
+
+    /// 出願した学校（一般入試）。
+    @Default(<String>[]) List<String> applications,
+
+    /// 合否（学校 ID → 合格か）。
+    @Default(<String, bool>{}) Map<String, bool> results,
+
+    /// 進学先。
+    String? enrolled,
+  }) = _EntranceExamState;
+
+  factory EntranceExamState.fromJson(Map<String, dynamic> json) =>
+      _$EntranceExamStateFromJson(json);
 }
 
 /// プレイヤーの実績（エンディング解析用）。

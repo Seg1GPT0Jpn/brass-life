@@ -190,7 +190,8 @@ class InstrumentDecision {
         f.id,
         [?f.wish],
         (t) => n.aptitude.fitFor(t) + (n.hasTrait('genius') ? 10 : 0),
-        n.previousInstrument,
+        // 中学からの経験者（再会した同級生）は、中学の楽器を経験として扱う。
+        n.previousInstrument ?? (f.skill > 0 ? f.wish : null),
       );
     }
     if (includePlayer) {
@@ -243,7 +244,9 @@ class InstrumentDecision {
       final t = types[assigned[f.id]!];
       final n = ctx.npc(s, f.id);
       final gotWish = f.wish == t;
-      final startSkill = n.previousInstrument == t
+      final startSkill = f.skill > 0 && f.wish == t
+          ? f.skill
+          : n.previousInstrument == t
           ? n.previousSkill
           : (n.background == MusicBackground.elementaryBand &&
                     t.family == InstrumentFamily.brass

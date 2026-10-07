@@ -8,6 +8,7 @@ import '../../domain/game/models/game_state.dart';
 import '../common/widgets/common_widgets.dart';
 import 'game_controller.dart';
 import 'event_panels.dart';
+import 'exam_panels.dart';
 import 'instrument_decision_panel.dart';
 
 class HomeTab extends ConsumerWidget {
@@ -28,6 +29,14 @@ class HomeTab extends ConsumerWidget {
         pending: PendingEvent(type: PendingEventType.executiveSelection),
       ) =>
         const ExecutivePanel(),
+      GameState(pending: PendingEvent(type: PendingEventType.recommendation)) =>
+        const RecommendationPanel(),
+      GameState(
+        pending: PendingEvent(type: PendingEventType.examApplication),
+      ) =>
+        const ApplicationPanel(),
+      GameState(pending: PendingEvent(type: PendingEventType.notice)) =>
+        const NoticePanel(),
       GameState(pending: PendingEvent(:final type)) => CardEventPanel(
         type: type,
       ),

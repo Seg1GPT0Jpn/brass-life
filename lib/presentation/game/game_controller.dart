@@ -67,6 +67,20 @@ class GameController extends Notifier<GameState?> {
     return r.lines;
   }
 
+  List<String> resolveRecommendation(String? schoolId) {
+    final r = _tm.resolveRecommendation(state!, schoolId);
+    _commit(r.state);
+    return r.lines;
+  }
+
+  List<String> resolveApplication(List<String> schoolIds) {
+    final r = _tm.resolveApplication(state!, schoolIds);
+    _commit(r.state);
+    return r.lines;
+  }
+
+  void resolveNotice() => _commit(_tm.resolveNotice(state!).state);
+
   void skipMonth(MonthlyPolicy policy) =>
       _commit(_tm.skipMonth(state!, policy));
 

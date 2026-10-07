@@ -15,6 +15,8 @@ import 'game_context.dart';
 import 'instrument_decision.dart';
 import 'memory_writer.dart';
 import 'drama_engine.dart';
+import 'entrance_exam_engine.dart';
+import 'school_transition.dart';
 import 'roster_service.dart';
 import 'school_calendar.dart';
 
@@ -44,6 +46,7 @@ class TimeManager {
       turn: 0,
       stage: GameStage.middle,
       schoolId: p.schoolId,
+      schoolHistory: [p.schoolId],
       roster: roster,
       npcs: npcs,
       player: PlayerState(
@@ -149,6 +152,81 @@ class TimeManager {
     return _finishEvent(r.state, '定期演奏会', r.lines, 'concert:${card.name}');
   }
 
+  /// 部活推薦の打診に答える（[schoolId] が null なら断る）。
+  ({GameState state, List<String> lines}) resolveRecommendation(
+    GameState s,
+    String? schoolId,
+  ) {
+    _expect(s, PendingEventType.recommendation);
+    final exam = s.exam!;
+    final lines = <String>[];
+    var next = s;
+    if (schoolId != null) {
+      if (!exam.offers.contains(schoolId)) throw ArgumentError('打診のない学校です');
+      final name = ctx.index.schoolById[schoolId]!.name;
+      final mem = MemoryWriter(ctx, s);
+      mem.add(
+        category: MemoryCategory.academic,
+        subjectId: Relations.player,
+        reasonKey: 'recommended',
+        params: {'school': name},
+        importance: 55,
+      );
+      next = mem.apply(
+        s.copyWith(
+          exam: exam.copyWith(recommended: schoolId, enrolled: schoolId),
+        ),
+      );
+      lines.add('$nameへの部活推薦を受けることにした。合格が内定した！');
+    } else {
+      lines.add('推薦の話は断り、一般入試で進路を決めることにした。');
+    }
+    return _finishEvent(
+      next,
+      '推薦の打診',
+      lines,
+      'recommend:${schoolId ?? 'none'}',
+    );
+  }
+
+  /// 高校（大学）に出願する。
+  ({GameState state, List<String> lines}) resolveApplication(
+    GameState s,
+    List<String> schoolIds,
+  ) {
+    _expect(s, PendingEventType.examApplication);
+    final engine = EntranceExamEngine(ctx);
+    final targets = {for (final t in engine.highSchools()) t.id: t};
+    final chosen = [for (final id in schoolIds) targets[id]!];
+    final error = EntranceExamEngine.validateHighApplications(chosen);
+    if (error != null) throw ArgumentError(error);
+    final lines = [
+      '出願した学校：',
+      for (final t in chosen)
+        '・${t.name}（${t.isPrivate ? '私立' : '公立'}／判定 ${engine.estimate(s, t)}）',
+    ];
+    final next = s.copyWith(exam: s.exam!.copyWith(applications: schoolIds));
+    return _finishEvent(next, '出願', lines, 'apply:${schoolIds.join(',')}');
+  }
+
+  /// お知らせを確認する。
+  ({GameState state, List<String> lines}) resolveNotice(GameState s) {
+    _expect(s, PendingEventType.notice);
+    return _finishEvent(s, null, const [], 'notice');
+  }
+
+  /// お知らせ（合格発表など）を表示する入力待ちイベントを設定する。
+  GameState _notice(GameState s, String title, List<String> lines) {
+    final logged = _log(s, title, lines);
+    return logged.copyWith(
+      pending: PendingEvent(
+        type: PendingEventType.notice,
+        turn: s.turn,
+        data: {'title': title, 'lines': lines.join('\n')},
+      ),
+    );
+  }
+
   /// 入力待ちイベントを既定の選択で解決する（テスト・自動進行用）。
   /// 楽器は [defaultWishes]、カードは手札の 1 枚目、幹部選出は「流れに任せる」。
   GameState autoResolve(
@@ -169,6 +247,15 @@ class TimeManager {
         CandidacyChoice.neutral,
       ).state,
       PendingEventType.concert => resolveConcert(s, cardsOf(s).first).state,
+      PendingEventType.recommendation => resolveRecommendation(
+        s,
+        s.exam!.offers.first,
+      ).state,
+      PendingEventType.examApplication => resolveApplication(
+        s,
+        EntranceExamEngine(ctx).autoApplications(s),
+      ).state,
+      PendingEventType.notice => resolveNotice(s).state,
     };
   }
 
@@ -202,7 +289,7 @@ class TimeManager {
 
   ({GameState state, List<String> lines}) _finishEvent(
     GameState s,
-    String label,
+    String? label,
     List<String> lines,
     String choice,
   ) {
@@ -210,7 +297,7 @@ class TimeManager {
       pending: null,
       choices: [...s.choices, '${s.turn}:$choice'],
     );
-    next = _log(next, label, lines);
+    if (label != null) next = _log(next, label, lines);
     // 同じ週に続くイベントがあれば続けて処理する。
     next = _processEvents(next);
     return (state: next, lines: lines);
@@ -397,6 +484,80 @@ class TimeManager {
       final r = ConcertEngine(ctx).run(cur, null);
       cur = _log(r.state, '定期演奏会', r.lines);
     }
+    // 7. 高校受験（中学 3 年）
+    if (cur.stage == GameStage.middle && cur.player.grade == 3) {
+      final exam = EntranceExamEngine(ctx);
+      if (cur.turn == school.turnOf(fy, 11, 3) && cur.exam == null) {
+        final offers = exam.recommendationOffers(cur);
+        cur = cur.copyWith(
+          exam: EntranceExamState(
+            kind: 'high',
+            offers: [for (final o in offers) o.id],
+          ),
+        );
+        if (offers.isNotEmpty) {
+          return cur.copyWith(
+            pending: PendingEvent(
+              type: PendingEventType.recommendation,
+              turn: cur.turn,
+            ),
+          );
+        }
+      }
+      final e = cur.exam;
+      if (cur.turn == school.turnOf(fy, 1, 2) &&
+          e != null &&
+          e.recommended == null &&
+          e.applications.isEmpty) {
+        return cur.copyWith(
+          pending: PendingEvent(
+            type: PendingEventType.examApplication,
+            turn: cur.turn,
+          ),
+        );
+      }
+      if (cur.turn == school.turnOf(fy, 2, 2) &&
+          e != null &&
+          e.recommended == null &&
+          e.applications.isNotEmpty &&
+          !e.results.keys.any((id) => ctx.index.schoolById[id]!.isPrivate)) {
+        final hasPrivate = e.applications.any(
+          (id) => ctx.index.schoolById[id]!.isPrivate,
+        );
+        if (hasPrivate) {
+          final r = exam.announce(cur, privateOnly: true);
+          return _notice(r.state, '私立高校 合格発表', r.lines);
+        }
+      }
+      if (cur.turn == school.turnOf(fy, 3, 2) &&
+          e != null &&
+          e.enrolled == null) {
+        var st = cur;
+        final lines = <String>[];
+        if (e.recommended == null) {
+          final r = exam.announce(st, privateOnly: false);
+          st = r.state;
+          lines.addAll(r.lines);
+        }
+        final d2 = exam.decideEnrollment(st);
+        return _notice(d2.state, '公立高校 合格発表・進路決定', [...lines, ...d2.lines]);
+      }
+      if (cur.turn == school.turnOf(fy, 3, 3) &&
+          !cur.memories.any((m) => m.reasonKey == 'graduated_middle')) {
+        final mem = MemoryWriter(ctx, cur);
+        mem.add(
+          category: MemoryCategory.life,
+          subjectId: Relations.player,
+          reasonKey: 'graduated_middle',
+          params: {'school': ctx.school(cur).name},
+          importance: 50,
+        );
+        return _notice(mem.apply(cur), '卒業式', [
+          '${ctx.school(cur).name}を卒業した。',
+          '3年間、吹奏楽部で過ごした日々が胸をよぎる。',
+        ]);
+      }
+    }
     return cur;
   }
 
@@ -457,6 +618,8 @@ class TimeManager {
     final club = ctx.club(s);
     final npcs = Map.of(s.npcs);
     final roster = <String>[];
+    final destinations = Map.of(s.npcDestinations);
+    final transition = SchoolTransition(ctx);
     var graduated = 0;
     for (final id in s.roster) {
       final m = npcs[id]!;
@@ -464,25 +627,22 @@ class TimeManager {
       if (m.grade >= 3) {
         npcs[id] = m.copyWith(active: false, grade: 4);
         graduated++;
+        // 中学を卒業する部員の進学先（高校で再会することがある）
+        if (s.stage == GameStage.middle) {
+          destinations[id] = SchoolTransition.encodeDestination(
+            transition.highSchoolFor(s, id),
+            fiscalYear,
+          );
+        }
         continue;
       }
       npcs[id] = m.copyWith(grade: m.grade + 1);
       roster.add(id);
     }
-    final cohort = RosterService(ctx).cohort(club, fiscalYear);
-    final extra = Map.of(s.extraNpcs);
-    for (final n in cohort) {
-      extra[n.id] = n;
-      roster.add(n.id);
-      npcs[n.id] = RosterService.initialState(n)
-          .copyWith(grade: 1, instrument: null, skill: 0);
-    }
-    final player = s.player.copyWith(grade: s.player.grade + 1);
     var next = s.copyWith(
       npcs: npcs,
       roster: roster,
-      extraNpcs: extra,
-      player: player,
+      npcDestinations: destinations,
       memories: compactMemories(s.memories, s.turn),
       contestMembers: const [],
       soloistId: null,
@@ -495,17 +655,50 @@ class TimeManager {
             e.key: e.value,
       },
     );
-    if (player.grade > 3) {
-      // Phase 5（高校受験と進学）で置き換える。
-      return _log(next.copyWith(stage: GameStage.finished), null, [
-        '中学校を卒業した。（高校編は今後のアップデートで追加されます）',
-      ]);
+
+    // 中学卒業 → 高校進学
+    if (s.player.grade >= 3 && s.stage == GameStage.middle) {
+      var exam = next.exam ?? const EntranceExamState(kind: 'high');
+      next = next.copyWith(exam: exam);
+      if (exam.enrolled == null) {
+        next = EntranceExamEngine(ctx).decideEnrollment(next).state;
+        exam = next.exam!;
+      }
+      final r = transition.enterHighSchool(next, exam.enrolled!, fiscalYear);
+      return _notice(r.state, '高校入学', ['$fiscalYear年度が始まった。', ...r.lines]);
     }
-    next = _log(next, null, [
+    // 高校卒業（Phase 6 で大学進学・エンディングに置き換える）
+    if (s.player.grade >= 3 && s.stage == GameStage.high) {
+      return _log(
+        next.copyWith(
+          stage: GameStage.finished,
+          player: s.player.copyWith(grade: 4),
+        ),
+        null,
+        ['高校を卒業した。（大学編・エンディングは今後のアップデートで追加されます）'],
+      );
+    }
+
+    final cohort = RosterService(ctx).cohort(club, fiscalYear);
+    final extra = Map.of(s.extraNpcs);
+    final roster2 = [...roster];
+    for (final n in cohort) {
+      extra[n.id] = n;
+      roster2.add(n.id);
+      npcs[n.id] = RosterService.initialState(n)
+          .copyWith(grade: 1, instrument: null, skill: 0);
+    }
+    final player = s.player.copyWith(grade: s.player.grade + 1);
+    next = next.copyWith(
+      npcs: npcs,
+      roster: roster2,
+      extraNpcs: extra,
+      player: player,
+    );
+    return _log(next, null, [
       '$fiscalYear年度が始まった。${player.grade}年生に進級。',
       '3年生 $graduated 人が卒業し、新入生 ${cohort.length} 人が入部した。',
     ]);
-    return next;
   }
 
   /// 記憶の整理: 1 年以上前の、プレイヤーに関係しない重要度 20 未満の記憶を捨てる。

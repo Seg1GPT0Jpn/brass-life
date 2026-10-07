@@ -77,6 +77,19 @@ _GameState _$GameStateFromJson(Map<String, dynamic> json) => _GameState(
   executiveSelectionTurn: (json['executiveSelectionTurn'] as num?)?.toInt(),
   lastConcertYear: (json['lastConcertYear'] as num?)?.toInt(),
   preparedTurn: (json['preparedTurn'] as num?)?.toInt() ?? -1,
+  exam: json['exam'] == null
+      ? null
+      : EntranceExamState.fromJson(json['exam'] as Map<String, dynamic>),
+  npcDestinations:
+      (json['npcDestinations'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, e as String),
+      ) ??
+      const <String, String>{},
+  schoolHistory:
+      (json['schoolHistory'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const <String>[],
 );
 
 Map<String, dynamic> _$GameStateToJson(_GameState instance) =>
@@ -108,6 +121,9 @@ Map<String, dynamic> _$GameStateToJson(_GameState instance) =>
       'executiveSelectionTurn': ?instance.executiveSelectionTurn,
       'lastConcertYear': ?instance.lastConcertYear,
       'preparedTurn': instance.preparedTurn,
+      'exam': ?instance.exam?.toJson(),
+      'npcDestinations': instance.npcDestinations,
+      'schoolHistory': instance.schoolHistory,
     };
 
 const _$GameStageEnumMap = {
@@ -322,6 +338,9 @@ const _$PendingEventTypeEnumMap = {
   PendingEventType.contest: 'contest',
   PendingEventType.executiveSelection: 'executiveSelection',
   PendingEventType.concert: 'concert',
+  PendingEventType.recommendation: 'recommendation',
+  PendingEventType.examApplication: 'examApplication',
+  PendingEventType.notice: 'notice',
 };
 
 _ContestProgress _$ContestProgressFromJson(Map<String, dynamic> json) =>
@@ -393,6 +412,38 @@ const _$ContestAwardEnumMap = {
   ContestAward.silver: 'silver',
   ContestAward.bronze: 'bronze',
 };
+
+_EntranceExamState _$EntranceExamStateFromJson(Map<String, dynamic> json) =>
+    _EntranceExamState(
+      kind: json['kind'] as String,
+      offers:
+          (json['offers'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const <String>[],
+      recommended: json['recommended'] as String?,
+      applications:
+          (json['applications'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const <String>[],
+      results:
+          (json['results'] as Map<String, dynamic>?)?.map(
+            (k, e) => MapEntry(k, e as bool),
+          ) ??
+          const <String, bool>{},
+      enrolled: json['enrolled'] as String?,
+    );
+
+Map<String, dynamic> _$EntranceExamStateToJson(_EntranceExamState instance) =>
+    <String, dynamic>{
+      'kind': instance.kind,
+      'offers': instance.offers,
+      'recommended': ?instance.recommended,
+      'applications': instance.applications,
+      'results': instance.results,
+      'enrolled': ?instance.enrolled,
+    };
 
 _Achievement _$AchievementFromJson(Map<String, dynamic> json) => _Achievement(
   fiscalYear: (json['fiscalYear'] as num).toInt(),
