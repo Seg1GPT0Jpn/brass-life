@@ -6,6 +6,7 @@ import 'game_controller.dart';
 import 'home_tab.dart';
 import 'members_tab.dart';
 import 'records_tab.dart';
+import 'relations_tab.dart';
 
 /// ゲーム本編の画面（ホーム / 部員 / 記録）。
 class GamePage extends ConsumerWidget {
@@ -27,7 +28,7 @@ class GamePage extends ConsumerWidget {
     }
     final date = ctx.calendar.dateOf(s.turn);
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         appBar: AppBar(
           title: Text(date.labelWithStage),
@@ -47,12 +48,13 @@ class GamePage extends ConsumerWidget {
             tabs: [
               Tab(text: 'ホーム'),
               Tab(text: '部員'),
+              Tab(text: '人間関係'),
               Tab(text: '記録'),
             ],
           ),
         ),
         body: const TabBarView(
-          children: [HomeTab(), MembersTab(), RecordsTab()],
+          children: [HomeTab(), MembersTab(), RelationsTab(), RecordsTab()],
         ),
       ),
     );

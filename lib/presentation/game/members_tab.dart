@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../domain/game/engine/game_context.dart';
 import '../../domain/game/models/game_state.dart';
@@ -44,7 +45,14 @@ class MembersTab extends ConsumerWidget {
         );
       }
       for (final m in list) {
-        items.add(MemberTile(ctx: ctx, state: s, member: m));
+        items.add(
+          MemberTile(
+            ctx: ctx,
+            state: s,
+            member: m,
+            onTap: () => context.go('/game/person/${m.id}'),
+          ),
+        );
       }
     }
     return ListView(children: items);

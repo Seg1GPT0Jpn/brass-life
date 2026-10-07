@@ -23,6 +23,12 @@ _GameState _$GameStateFromJson(Map<String, dynamic> json) => _GameState(
         (k, e) => MapEntry(k, Npc.fromJson(e as Map<String, dynamic>)),
       ) ??
       const <String, Npc>{},
+  relations:
+      (json['relations'] as Map<String, dynamic>?)?.map(
+        (k, e) =>
+            MapEntry(k, RelationshipVector.fromJson(e as Map<String, dynamic>)),
+      ) ??
+      const <String, RelationshipVector>{},
   memories:
       (json['memories'] as List<dynamic>?)
           ?.map((e) => MemoryTag.fromJson(e as Map<String, dynamic>))
@@ -58,6 +64,7 @@ Map<String, dynamic> _$GameStateToJson(_GameState instance) =>
       'roster': instance.roster,
       'npcs': instance.npcs.map((k, e) => MapEntry(k, e.toJson())),
       'extraNpcs': instance.extraNpcs.map((k, e) => MapEntry(k, e.toJson())),
+      'relations': instance.relations.map((k, e) => MapEntry(k, e.toJson())),
       'memories': instance.memories.map((e) => e.toJson()).toList(),
       'memorySeq': instance.memorySeq,
       'logs': instance.logs.map((e) => e.toJson()).toList(),

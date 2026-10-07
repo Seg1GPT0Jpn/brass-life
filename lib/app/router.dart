@@ -10,6 +10,7 @@ import '../presentation/debug/shell/debug_shell.dart';
 import '../presentation/debug/world_overview/overview_page.dart';
 import '../presentation/game/game_controller.dart';
 import '../presentation/game/game_page.dart';
+import '../presentation/game/relations_tab.dart';
 import '../presentation/title/title_page.dart';
 import '../presentation/world/world_controller.dart';
 
@@ -26,7 +27,17 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: '/', builder: (_, _) => const TitlePage()),
-      GoRoute(path: '/game', builder: (_, _) => const GamePage()),
+      GoRoute(
+        path: '/game',
+        builder: (_, _) => const GamePage(),
+        routes: [
+          GoRoute(
+            path: 'person/:id',
+            builder: (_, state) =>
+                PersonPage(npcId: state.pathParameters['id']!),
+          ),
+        ],
+      ),
       StatefulShellRoute.indexedStack(
         builder: (_, _, shell) => DebugShell(navigationShell: shell),
         branches: [

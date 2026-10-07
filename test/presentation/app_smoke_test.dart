@@ -144,10 +144,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(container.read(gameControllerProvider)!.turn, greaterThan(s.turn));
 
-    for (final tab in ['部員', '記録', 'ホーム']) {
+    for (final tab in ['部員', '人間関係', '記録', 'ホーム']) {
       await tester.tap(find.text(tab));
       await tester.pumpAndSettle();
     }
+    // 人物詳細（関係の履歴）
+    final firstMember = container.read(gameControllerProvider)!.roster.first;
+    container.read(routerProvider).go('/game/person/$firstMember');
+    await tester.pumpAndSettle();
+    expect(find.text('あなたとの関係'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

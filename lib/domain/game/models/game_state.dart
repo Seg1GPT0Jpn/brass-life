@@ -6,6 +6,7 @@ import '../../value_objects/aptitude.dart';
 import '../../value_objects/instrument.dart';
 import '../../value_objects/person_enums.dart';
 import '../../value_objects/personality.dart';
+import '../../value_objects/relationship_vector.dart';
 import 'game_enums.dart';
 
 part 'game_state.freezed.dart';
@@ -39,6 +40,10 @@ abstract class GameState with _$GameState {
 
     /// ゲーム中に生成された NPC（翌年度以降の新入生など）。
     @Default(<String, Npc>{}) Map<String, Npc> extraNpcs,
+
+    /// 関係性ベクトル。キーは「主体ID>相手ID」（主体から見た相手）。
+    @Default(<String, RelationshipVector>{})
+    Map<String, RelationshipVector> relations,
 
     /// ゲーム中に生まれた記憶。
     @Default(<MemoryTag>[]) List<MemoryTag> memories,

@@ -9,6 +9,19 @@ const Map<String, String> memoryTemplates = {
   'instrument_wish_denied': '第1希望（{wish}）は叶わず、{instrument}の担当になった',
   'player_fell_ill': '無理がたたって体調を崩し、一週間寝込んだ',
   'exam_result': '{exam}で{score}点を取った',
+  'player_hung_out': '{actor}は{target}と遊びに出かけた',
+  'noticed_slacking': '{actor}は{target}が練習をサボっているのに気づいた',
+  'npc_breakthrough': '{actor}は{instrument}の壁を越え、一気に上達した',
+  'taught_junior': '{actor}は後輩の{target}に練習を教えた',
+  'asked_senior': '{actor}は先輩の{target}に教えを請うた',
+  'bonded': '{actor}は{target}と話が弾み、仲良くなった',
+  'quarreled': '{actor}は{target}と口論になった',
+  'competed': '{actor}は{target}に対抗心を燃やした',
+  'spread_rumor': '{actor}は{target}に、{victim}についての噂を話した',
+  'reconciled': '{actor}は{target}と仲直りした',
+  'complained_advisor': '{actor}は{target}に顧問への不満を漏らした',
+  'encouraged': '{actor}は落ち込んでいた{target}を励ました',
+  'quit_club': '{actor}は吹奏楽部を辞めた',
 };
 
 String renderMemory(String reasonKey, Map<String, String> params) {

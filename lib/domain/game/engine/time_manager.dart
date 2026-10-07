@@ -7,7 +7,7 @@ import 'action_engine.dart';
 import 'game_context.dart';
 import 'instrument_decision.dart';
 import 'memory_writer.dart';
-import 'npc_growth.dart';
+import 'drama_engine.dart';
 import 'roster_service.dart';
 import 'school_calendar.dart';
 
@@ -81,8 +81,8 @@ class TimeManager {
     var next = r.state.copyWith(
       choices: [...r.state.choices, '${s.turn}:${action.name}'],
     );
-    next = NpcGrowth(ctx).apply(next);
-    next = _log(next, action.label, r.lines);
+    final drama = DramaEngine(ctx).weekly(next, action);
+    next = _log(drama.state, action.label, [...r.lines, ...drama.lines]);
     return _advance(next);
   }
 
@@ -193,6 +193,7 @@ class TimeManager {
       roster: roster,
       extraNpcs: extra,
       player: player,
+      memories: compactMemories(s.memories, s.turn),
     );
     if (player.grade > 3) {
       // Phase 5（高校受験と進学）で置き換える。
@@ -206,6 +207,17 @@ class TimeManager {
     ]);
     return next;
   }
+
+  /// 記憶の整理: 1 年以上前の、プレイヤーに関係しない重要度 20 未満の記憶を捨てる。
+  /// （セーブデータの肥大化を防ぐ。重要な出来事とプレイヤーの記憶は全て残る）
+  static List<MemoryTag> compactMemories(List<MemoryTag> all, int turn) => [
+    for (final m in all)
+      if (m.importance >= 20 ||
+          m.subjectId == 'player' ||
+          m.objectIds.contains('player') ||
+          m.date.turn >= turn - 52)
+        m,
+  ];
 
   GameState _log(GameState s, String? action, List<String> lines) {
     final d = ctx.calendar.dateOf(s.turn);
