@@ -72,8 +72,37 @@ enum MonthlyPolicy {
 
 /// プレイヤーの入力を待つイベントの種類。
 enum PendingEventType {
-  instrumentDecision('楽器決定');
+  instrumentDecision('楽器決定'),
+  audition('オーディション'),
+  contest('コンクール'),
+  executiveSelection('幹部選出'),
+  concert('定期演奏会');
 
   const PendingEventType(this.label);
   final String label;
+}
+
+/// 部内の役職。
+enum ClubRole {
+  captain('部長'),
+  viceCaptain('副部長'),
+  conductor('学生指揮'),
+  treasurer('会計'),
+  gradeRep('学年代表'),
+  viceRep('副代表'),
+  partLeader('パートリーダー');
+
+  const ClubRole(this.label);
+  final String label;
+}
+
+/// 幹部選出でのプレイヤーの意思。
+enum CandidacyChoice {
+  run('立候補する', '自分から部長（代表）に名乗り出る。'),
+  neutral('流れに任せる', '推されたら引き受ける。'),
+  decline('辞退する', '役職には就かない。');
+
+  const CandidacyChoice(this.label, this.description);
+  final String label;
+  final String description;
 }

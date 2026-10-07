@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/game/engine/contest_engine.dart';
 import '../../domain/game/engine/school_calendar.dart';
 import '../../domain/game/models/game_enums.dart';
 import '../../domain/game/models/game_state.dart';
 import '../common/widgets/common_widgets.dart';
 import 'game_controller.dart';
+import 'event_panels.dart';
 import 'instrument_decision_panel.dart';
 
 class HomeTab extends ConsumerWidget {
@@ -22,6 +24,13 @@ class HomeTab extends ConsumerWidget {
         pending: PendingEvent(type: PendingEventType.instrumentDecision),
       ) =>
         const InstrumentDecisionPanel(),
+      GameState(
+        pending: PendingEvent(type: PendingEventType.executiveSelection),
+      ) =>
+        const ExecutivePanel(),
+      GameState(pending: PendingEvent(:final type)) => CardEventPanel(
+        type: type,
+      ),
       _ => const _ActionPanel(),
     };
     final log = _LogCard(s);
@@ -82,6 +91,15 @@ class _StatusCard extends ConsumerWidget {
             '${club.tier.label} ／ 部員 ${ctx.activeMembers(s).length + 1} 人',
           ),
           KvRow('担当', p.instrument?.label ?? '未定'),
+          if (s.roles['player'] != null) KvRow('役職', s.roles['player']!.label),
+          if (p.retired) const KvRow('部活', '引退済み'),
+          if (s.contest != null &&
+              s.contest!.fiscalYear == ctx.calendar.dateOf(s.turn).fiscalYear)
+            KvRow(
+              'コンクール',
+              '${s.contestMembers.contains('player') ? (s.soloistId == 'player' ? 'メンバー（ソリスト）' : 'メンバー') : 'B組（応援）'}'
+                  '${s.contest!.nextStage == null ? ' ／ 今年の日程は終了' : ' ／ 次: ${nextContestLabel(ContestEngine(ctx), s.contest!.fiscalYear, s.contest!.nextStage)}'}',
+            ),
           if (p.instrument != null)
             ValueBar(label: '熟練度', value: p.skill, max: 1000),
           ValueBar(label: '音楽性', value: p.musicality, max: 1000),
@@ -178,6 +196,12 @@ class _ActionPanelState extends ConsumerState<_ActionPanel> {
             onPressed: () => vm.skipMonth(s.policy),
             icon: const Icon(Icons.fast_forward),
             label: const Text('月末までスキップ（イベントで停止）'),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () => vm.skipToNextEvent(s.policy),
+            icon: const Icon(Icons.skip_next),
+            label: const Text('次のイベントまで進める（最大半年）'),
           ),
         ],
       ),

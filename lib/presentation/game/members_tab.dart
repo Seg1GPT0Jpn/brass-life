@@ -16,7 +16,15 @@ class MembersTab extends ConsumerWidget {
     final s = ref.watch(gameControllerProvider)!;
     final ctx = ref.watch(gameContextProvider)!;
     final members = ctx.activeMembers(s);
-    final items = <Widget>[];
+    final items = <Widget>[
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        child: Text(
+          '［役職］ ♪＝今年のコンクールメンバー。引退した3年生は表示されません。',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ),
+    ];
     for (var g = 3; g >= 1; g--) {
       final list = [
         for (final m in members)
@@ -37,7 +45,11 @@ class MembersTab extends ConsumerWidget {
           ListTile(
             dense: true,
             leading: const Icon(Icons.person),
-            title: Text('${s.player.fullName}（あなた）'),
+            title: Text(
+              '${s.player.fullName}（あなた）'
+              '${s.roles['player'] == null ? '' : '［${s.roles['player']!.label}］'}'
+              '${s.contestMembers.contains('player') ? ' ♪' : ''}',
+            ),
             subtitle: Text(
               '${s.player.instrument?.label ?? '未定'} ／ 熟練度 ${s.player.skill}',
             ),
@@ -84,7 +96,12 @@ class MemberTile extends StatelessWidget {
     return ListTile(
       dense: true,
       onTap: onTap,
-      title: Text('${n.fullName}（${n.gender.label}）'),
+      title: Text(
+        '${n.fullName}（${n.gender.label}）'
+        '${state.roles[member.id] == null ? '' : '［${state.roles[member.id]!.label}］'}'
+        '${state.contestMembers.contains(member.id) ? ' ♪' : ''}'
+        '${state.soloistId == member.id ? '（ソロ）' : ''}',
+      ),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

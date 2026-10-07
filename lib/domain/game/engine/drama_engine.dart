@@ -65,7 +65,7 @@ class DramaEngine {
 
     List<_Member> members() => [
       for (final id in s.roster)
-        if (npcs[id]?.active ?? false)
+        if ((npcs[id]?.active ?? false) && !npcs[id]!.retired)
           _Member(
             id,
             npcs[id]!.grade,
@@ -196,14 +196,20 @@ class DramaEngine {
     // ── 2. NPC の自律行動 ──
     for (final id in s.roster) {
       final st = npcs[id];
-      if (st == null || !st.active) continue;
+      if (st == null || !st.active || st.retired) continue;
       final n = ctx.npc(s, id);
       final rng = ctx.sim.stream(
         turn: s.turn,
         domain: 'npc_autonomy',
         actor: id,
       );
-      final behavior = _chooseBehavior(rng, n.traits, st, club.mood);
+      final behavior = _chooseBehavior(
+        rng,
+        n.traits,
+        st,
+        club.mood,
+        s.roles[id],
+      );
       final everyone = members().where((m) => m.id != id).toList();
       final self = _Member(
         id,
@@ -554,6 +560,10 @@ class DramaEngine {
     for (final id in s.roster) {
       final st = npcs[id]!;
       if (!st.active) continue;
+      if (st.retired) {
+        roster.add(id);
+        continue;
+      }
       final rng = ctx.sim.stream(turn: s.turn, domain: 'npc_quit', actor: id);
       if (st.lowMotivationWeeks >= 6 && rng.chance(3000)) {
         npcs[id] = st.copyWith(active: false, quit: true);
@@ -606,6 +616,7 @@ class DramaEngine {
     List<TraitTag> traitsList,
     NpcState st,
     ClubMood mood,
+    ClubRole? role,
   ) {
     final weights = <int>[];
     for (final b in NpcBehavior.values) {
@@ -624,6 +635,15 @@ class DramaEngine {
         w = w * 2;
       }
       if (st.stress > 60 && b == NpcBehavior.quarrel) w = w * 2;
+      // 部長・代表は部をまとめようとする。
+      if (role == ClubRole.captain || role == ClubRole.gradeRep) {
+        if (b == NpcBehavior.encourage || b == NpcBehavior.teachJunior) {
+          w = w * 2;
+        }
+        if (b == NpcBehavior.quarrel || b == NpcBehavior.slackOff) {
+          w = w * 6 ~/ 10;
+        }
+      }
       if (st.instrument == null &&
           (b == NpcBehavior.compete || b == NpcBehavior.breakthrough)) {
         w = 0;

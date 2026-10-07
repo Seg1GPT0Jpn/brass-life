@@ -54,10 +54,12 @@ void main() {
     GameState play() {
       var s = startAndDecide([InstrumentType.clarinet]);
       for (var i = 0; i < 20; i++) {
-        s = tm.submitAction(
-          s,
-          WeeklyAction.values[i % WeeklyAction.values.length],
-        );
+        s = s.pending != null
+            ? tm.autoResolve(s)
+            : tm.submitAction(
+                s,
+                WeeklyAction.values[i % WeeklyAction.values.length],
+              );
       }
       return s;
     }
@@ -95,7 +97,9 @@ void main() {
     var s = startAndDecide([InstrumentType.trumpet]);
     final rosterBefore = s.roster.length;
     while (ctx.calendar.dateOf(s.turn).academicYearIndex == 0) {
-      s = tm.skipMonth(s, MonthlyPolicy.balanced);
+      s = s.pending != null
+          ? tm.autoResolve(s)
+          : tm.skipMonth(s, MonthlyPolicy.balanced);
     }
     expect(s.player.exams.length, 5);
     expect(s.player.termGrades.length, 3);

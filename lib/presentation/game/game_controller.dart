@@ -4,6 +4,7 @@ import '../../app/providers.dart';
 import '../../core/rng/seed_code.dart';
 import '../../domain/game/engine/game_context.dart';
 import '../../domain/game/engine/time_manager.dart';
+import '../../domain/game/master/approach_cards.dart';
 import '../../domain/game/models/game_enums.dart';
 import '../../domain/game/models/game_state.dart';
 import '../../domain/game/models/save_summary.dart';
@@ -42,8 +43,35 @@ class GameController extends Notifier<GameState?> {
     return r.lines;
   }
 
+  List<String> resolveAudition(ApproachCard card) {
+    final r = _tm.resolveAudition(state!, card);
+    _commit(r.state);
+    return r.lines;
+  }
+
+  List<String> resolveContest(ApproachCard card) {
+    final r = _tm.resolveContest(state!, card);
+    _commit(r.state);
+    return r.lines;
+  }
+
+  List<String> resolveExecutive(CandidacyChoice choice) {
+    final r = _tm.resolveExecutive(state!, choice);
+    _commit(r.state);
+    return r.lines;
+  }
+
+  List<String> resolveConcert(ApproachCard card) {
+    final r = _tm.resolveConcert(state!, card);
+    _commit(r.state);
+    return r.lines;
+  }
+
   void skipMonth(MonthlyPolicy policy) =>
       _commit(_tm.skipMonth(state!, policy));
+
+  void skipToNextEvent(MonthlyPolicy policy) =>
+      _commit(_tm.skipToNextEvent(state!, policy));
 
   void setPolicy(MonthlyPolicy policy) =>
       _commit(state!.copyWith(policy: policy), save: false);

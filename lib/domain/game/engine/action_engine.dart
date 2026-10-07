@@ -66,6 +66,10 @@ class ActionEngine {
     final lines = <String>[];
     final mem = MemoryWriter(ctx, s);
     final attends = action != WeeklyAction.rest;
+    // 引退後は部活の合奏・通常練習がない（自主的な練習のみ）。
+    final inClub = attends && !p.retired;
+    final role = s.roles['player'];
+    final leads = role == ClubRole.captain || role == ClubRole.gradeRep;
 
     // 体調不良: 疲労が極端に高いと一定確率で寝込む。
     final illRoll = rng.nextInt(100);
@@ -94,11 +98,12 @@ class ActionEngine {
       );
     } else {
       // 熟練度
-      if (p.instrument != null && attends) {
+      if (p.instrument != null && attends && (inClub || action.isPractice)) {
         final fit =
             (p.aptitude.fitFor(p.instrument!) + (p.hasTrait('genius') ? 15 : 0))
                 .clamp(0, 115);
-        final base = _baseSkill(action) + 1 + club.practiceIntensity ~/ 2;
+        final base =
+            _baseSkill(action) + (inClub ? 1 + club.practiceIntensity ~/ 2 : 0);
         // 各係数は % 表記なので 100^5 で割る（中間値は 2^53 未満に収まる）。
         var gain =
             base *
@@ -115,7 +120,8 @@ class ActionEngine {
         if (p.hasTrait('hardworking')) gain = gain * 11 ~/ 10;
         gain = gain < 0 ? 0 : gain;
         final musGain =
-            _baseMusicality(action) *
+            (_baseMusicality(action) +
+                (role == ClubRole.conductor && inClub ? 2 : 0)) *
             fatigueEff *
             (1100 - p.musicality) ~/
             (100 * 1100);
@@ -145,7 +151,7 @@ class ActionEngine {
       // 疲労・ストレス・やる気・社交・顧問評価。
       // 疲労とストレスは高いほど自然に回復しやすく（平衡点を持つ）、
       // やる気は性格で決まる基準値へ少しずつ戻る。
-      final clubLoad = attends ? club.practiceIntensity * 3 : 0;
+      final clubLoad = inClub ? club.practiceIntensity * 3 : 0;
       final recovery = 4 + p.stamina ~/ 10 + p.fatigue ~/ 5;
       final fatigue = (p.fatigue + clubLoad + _fatigueDelta(action) - recovery)
           .clamp(0, 100);
@@ -155,6 +161,8 @@ class ActionEngine {
           p.stress ~/ 6 +
           (fatigue > 70 ? 4 : 0);
       if (p.hasTrait('sensitive')) stress += 1;
+      // 部長・代表は気苦労が多いが、顧問の信頼を得やすい。
+      if (leads && inClub) stress += 2;
       if (p.hasTrait('optimistic')) stress -= 1;
       final baseline = (60 + p.personality.conscientiousness ~/ 5).clamp(
         30,
@@ -177,7 +185,8 @@ class ActionEngine {
             WeeklyAction.rest => -3,
             _ when action.isPractice => 1,
             _ => 0,
-          };
+          } +
+          (leads && inClub ? 1 : 0);
       lines.add(
         '疲労 ${_signed(fatigue - p.fatigue)}（$fatigue） ／ '
         'ストレス ${_signed(stress.clamp(0, 100) - p.stress)}（${stress.clamp(0, 100)}）',

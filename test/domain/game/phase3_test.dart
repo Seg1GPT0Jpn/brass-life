@@ -23,9 +23,7 @@ void main() {
     var s = tm.newGame(world);
     s = tm.submitAction(s, WeeklyAction.individualPractice);
     s = tm.resolveInstrumentDecision(s, [InstrumentType.trumpet]).state;
-    for (var i = 0; i < 6; i++) {
-      s = tm.skipMonth(s, MonthlyPolicy.balanced);
-    }
+    s = tm.autoPlayMonths(s, 6, MonthlyPolicy.balanced);
     afterHalfYear = s;
   });
 
@@ -78,9 +76,7 @@ void main() {
     var s = tm.newGame(world);
     s = tm.submitAction(s, WeeklyAction.individualPractice);
     s = tm.resolveInstrumentDecision(s, [InstrumentType.trumpet]).state;
-    for (var i = 0; i < 6; i++) {
-      s = tm.skipMonth(s, MonthlyPolicy.balanced);
-    }
+    s = tm.autoPlayMonths(s, 6, MonthlyPolicy.balanced);
     expect(s.relations, afterHalfYear.relations);
     expect(s.memories, afterHalfYear.memories);
     expect(s, afterHalfYear);
@@ -108,8 +104,9 @@ void main() {
           ),
         },
       );
-      if (s.pending != null) break;
-      s = tm.submitAction(s, WeeklyAction.study);
+      s = s.pending != null
+          ? tm.autoResolve(s)
+          : tm.submitAction(s, WeeklyAction.study);
     }
     expect(s.roster.contains(victim), isFalse);
     expect(s.npcs[victim]!.quit, isTrue);

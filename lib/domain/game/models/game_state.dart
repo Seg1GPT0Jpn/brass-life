@@ -1,12 +1,14 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../entities/memory_tag.dart';
+import '../../entities/club.dart';
 import '../../entities/npc.dart';
 import '../../value_objects/aptitude.dart';
 import '../../value_objects/instrument.dart';
 import '../../value_objects/person_enums.dart';
 import '../../value_objects/personality.dart';
 import '../../value_objects/relationship_vector.dart';
+import '../../value_objects/school_enums.dart';
 import 'game_enums.dart';
 
 part 'game_state.freezed.dart';
@@ -63,6 +65,33 @@ abstract class GameState with _$GameState {
 
     /// テスト週は自動で勉強するか。
     @Default(true) bool studyBeforeExams,
+
+    /// 今年度のコンクールメンバー（'player' を含みうる）。
+    @Default(<String>[]) List<String> contestMembers,
+
+    /// 今年度のソリスト。
+    String? soloistId,
+
+    /// 今年度のコンクールの進行状況。
+    ContestProgress? contest,
+
+    /// 現在の学校で行われた（ゲーム中の）コンクール成績。
+    @Default(<ContestRecord>[]) List<ContestRecord> clubHistory,
+
+    /// プレイヤーの実績（6 年間を通して保持）。
+    @Default(<Achievement>[]) List<Achievement> achievements,
+
+    /// 役職（ID → 役職）。
+    @Default(<String, ClubRole>{}) Map<String, ClubRole> roles,
+
+    /// 幹部選出を行うターン（3 年生の引退時に設定）。
+    int? executiveSelectionTurn,
+
+    /// 定期演奏会を行った最後の年度。
+    int? lastConcertYear,
+
+    /// 年度更新などのターン開始処理を済ませた最後のターン。
+    @Default(-1) int preparedTurn,
   }) = _GameState;
 
   factory GameState.fromJson(Map<String, dynamic> json) =>
@@ -125,6 +154,9 @@ abstract class PlayerState with _$PlayerState {
 
     /// 行動の累計回数（エンディング解析に用いる）。
     @Default(<String, int>{}) Map<String, int> actionCounts,
+
+    /// 3 年生の引退済み。
+    @Default(false) bool retired,
   }) = _PlayerState;
 
   const PlayerState._();
@@ -159,6 +191,9 @@ abstract class NpcState with _$NpcState {
 
     /// 新入生の希望楽器。
     InstrumentType? wish,
+
+    /// 3 年生の引退済み（卒業までは在籍するが部活動には参加しない）。
+    @Default(false) bool retired,
   }) = _NpcState;
 
   factory NpcState.fromJson(Map<String, dynamic> json) =>
@@ -203,6 +238,70 @@ abstract class PendingEvent with _$PendingEvent {
 
   factory PendingEvent.fromJson(Map<String, dynamic> json) =>
       _$PendingEventFromJson(json);
+}
+
+/// 今年度のコンクールの進行状況。
+@freezed
+abstract class ContestProgress with _$ContestProgress {
+  const factory ContestProgress({
+    required int fiscalYear,
+    required BandDivision division,
+
+    /// 次に出場する大会（敗退・終了なら null）。
+    ContestStage? nextStage,
+
+    /// 各大会の結果（出場順）。
+    @Default(<ContestStageResult>[]) List<ContestStageResult> results,
+
+    /// 全日程が終わったターン（引退判定用）。
+    int? finishedTurn,
+
+    /// 3 年生の引退処理を済ませたか。
+    @Default(false) bool retirementDone,
+  }) = _ContestProgress;
+
+  factory ContestProgress.fromJson(Map<String, dynamic> json) =>
+      _$ContestProgressFromJson(json);
+}
+
+/// 1 つの大会の結果。
+@freezed
+abstract class ContestStageResult with _$ContestStageResult {
+  const factory ContestStageResult({
+    required ContestStage stage,
+    required ContestAward award,
+    required bool advanced,
+
+    /// 演奏の出来（0..100 前後）。
+    required int score,
+
+    /// 出場団体中の順位。
+    required int rank,
+    required int entrants,
+
+    /// 同じ大会の他校の結果（表示用、上位のみ）。
+    @Default(<String>[]) List<String> board,
+  }) = _ContestStageResult;
+
+  factory ContestStageResult.fromJson(Map<String, dynamic> json) =>
+      _$ContestStageResultFromJson(json);
+}
+
+/// プレイヤーの実績（エンディング解析用）。
+@freezed
+abstract class Achievement with _$Achievement {
+  const factory Achievement({
+    required int fiscalYear,
+    required String schoolId,
+    required String kind,
+    required String label,
+
+    /// 実績の大きさ（0..100）。
+    required int weight,
+  }) = _Achievement;
+
+  factory Achievement.fromJson(Map<String, dynamic> json) =>
+      _$AchievementFromJson(json);
 }
 
 /// 1 週間の出来事。

@@ -20,10 +20,7 @@ void main() {
       InstrumentType.horn,
     ]).state;
     final sw = Stopwatch()..start();
-    while (ctx.calendar.dateOf(s.turn).academicYearIndex < 2 &&
-        s.pending == null) {
-      s = tm.skipMonth(s, policy);
-    }
+    s = tm.autoPlayMonths(s, 23, policy);
     final p = s.player;
     final members = ctx.activeMembers(s).where((m) => m.grade == 2).toList();
     final avg = members.isEmpty

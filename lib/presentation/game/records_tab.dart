@@ -45,6 +45,37 @@ class RecordsTab extends ConsumerWidget {
           ),
         ),
         SectionCard(
+          title: '実績',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (s.achievements.isEmpty) const Text('まだ実績はありません。'),
+              for (final a in s.achievements.reversed) Text('・${a.label}'),
+            ],
+          ),
+        ),
+        SectionCard(
+          title: '部のコンクール成績（在籍中）',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (s.clubHistory.isEmpty) const Text('まだありません。'),
+              for (final h in s.clubHistory.reversed)
+                KvRow('${h.fiscalYear}年度', '${h.summary}（${h.division.label}）'),
+              if (s.contest != null)
+                for (final r in s.contest!.results) ...[
+                  const Divider(),
+                  Text(
+                    '${s.contest!.fiscalYear}年度 ${r.stage.label}：${r.award.label}'
+                    '${r.advanced ? '（代表）' : ''}　${r.entrants}団体中 ${r.rank}位',
+                  ),
+                  for (final b in r.board)
+                    Text('　$b', style: Theme.of(context).textTheme.bodySmall),
+                ],
+            ],
+          ),
+        ),
+        SectionCard(
           title: '行動の記録',
           child: Column(
             children: [

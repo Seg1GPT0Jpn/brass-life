@@ -22,6 +22,16 @@ const Map<String, String> memoryTemplates = {
   'complained_advisor': '{actor}は{target}に顧問への不満を漏らした',
   'encouraged': '{actor}は落ち込んでいた{target}を励ました',
   'quit_club': '{actor}は吹奏楽部を辞めた',
+  'audition_passed': '{actor}はオーディションに合格し、コンクールメンバーに選ばれた',
+  'audition_failed': '{actor}はオーディションに落ち、コンクールメンバーになれなかった',
+  'solo_chosen': '{actor}は自由曲の{instrument}ソロに抜擢された',
+  'contest_support':
+      '{fiscalYear}年度 {contest} {stage}：客席から仲間を応援した（{award}{suffix}）',
+  'appointed_role': '{actor}は{role}に選ばれた',
+  'lost_election': '{actor}は立候補したが、{target}に及ばなかった',
+  'retired': '{actor}は部活を引退した',
+  'concert_result': '{school}の定期演奏会に出演した（{rating}）',
+  'concert_watched': '{school}の定期演奏会を見守った（{rating}）',
 };
 
 String renderMemory(String reasonKey, Map<String, String> params) {

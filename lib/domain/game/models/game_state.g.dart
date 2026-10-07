@@ -50,6 +50,33 @@ _GameState _$GameStateFromJson(Map<String, dynamic> json) => _GameState(
       $enumDecodeNullable(_$MonthlyPolicyEnumMap, json['policy']) ??
       MonthlyPolicy.balanced,
   studyBeforeExams: json['studyBeforeExams'] as bool? ?? true,
+  contestMembers:
+      (json['contestMembers'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const <String>[],
+  soloistId: json['soloistId'] as String?,
+  contest: json['contest'] == null
+      ? null
+      : ContestProgress.fromJson(json['contest'] as Map<String, dynamic>),
+  clubHistory:
+      (json['clubHistory'] as List<dynamic>?)
+          ?.map((e) => ContestRecord.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <ContestRecord>[],
+  achievements:
+      (json['achievements'] as List<dynamic>?)
+          ?.map((e) => Achievement.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <Achievement>[],
+  roles:
+      (json['roles'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, $enumDecode(_$ClubRoleEnumMap, e)),
+      ) ??
+      const <String, ClubRole>{},
+  executiveSelectionTurn: (json['executiveSelectionTurn'] as num?)?.toInt(),
+  lastConcertYear: (json['lastConcertYear'] as num?)?.toInt(),
+  preparedTurn: (json['preparedTurn'] as num?)?.toInt() ?? -1,
 );
 
 Map<String, dynamic> _$GameStateToJson(_GameState instance) =>
@@ -72,6 +99,15 @@ Map<String, dynamic> _$GameStateToJson(_GameState instance) =>
       'pending': ?instance.pending?.toJson(),
       'policy': _$MonthlyPolicyEnumMap[instance.policy]!,
       'studyBeforeExams': instance.studyBeforeExams,
+      'contestMembers': instance.contestMembers,
+      'soloistId': ?instance.soloistId,
+      'contest': ?instance.contest?.toJson(),
+      'clubHistory': instance.clubHistory.map((e) => e.toJson()).toList(),
+      'achievements': instance.achievements.map((e) => e.toJson()).toList(),
+      'roles': instance.roles.map((k, e) => MapEntry(k, _$ClubRoleEnumMap[e]!)),
+      'executiveSelectionTurn': ?instance.executiveSelectionTurn,
+      'lastConcertYear': ?instance.lastConcertYear,
+      'preparedTurn': instance.preparedTurn,
     };
 
 const _$GameStageEnumMap = {
@@ -85,6 +121,16 @@ const _$MonthlyPolicyEnumMap = {
   MonthlyPolicy.balanced: 'balanced',
   MonthlyPolicy.studyFocus: 'studyFocus',
   MonthlyPolicy.health: 'health',
+};
+
+const _$ClubRoleEnumMap = {
+  ClubRole.captain: 'captain',
+  ClubRole.viceCaptain: 'viceCaptain',
+  ClubRole.conductor: 'conductor',
+  ClubRole.treasurer: 'treasurer',
+  ClubRole.gradeRep: 'gradeRep',
+  ClubRole.viceRep: 'viceRep',
+  ClubRole.partLeader: 'partLeader',
 };
 
 _PlayerState _$PlayerStateFromJson(Map<String, dynamic> json) => _PlayerState(
@@ -134,6 +180,7 @@ _PlayerState _$PlayerStateFromJson(Map<String, dynamic> json) => _PlayerState(
         (k, e) => MapEntry(k, (e as num).toInt()),
       ) ??
       const <String, int>{},
+  retired: json['retired'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$PlayerStateToJson(
@@ -162,6 +209,7 @@ Map<String, dynamic> _$PlayerStateToJson(
   'exams': instance.exams.map((e) => e.toJson()).toList(),
   'termGrades': instance.termGrades.map((e) => e.toJson()).toList(),
   'actionCounts': instance.actionCounts,
+  'retired': instance.retired,
 };
 
 const _$GenderEnumMap = {Gender.female: 'female', Gender.male: 'male'};
@@ -205,6 +253,7 @@ _NpcState _$NpcStateFromJson(Map<String, dynamic> json) => _NpcState(
   active: json['active'] as bool? ?? true,
   quit: json['quit'] as bool? ?? false,
   wish: $enumDecodeNullable(_$InstrumentTypeEnumMap, json['wish']),
+  retired: json['retired'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$NpcStateToJson(_NpcState instance) => <String, dynamic>{
@@ -218,6 +267,7 @@ Map<String, dynamic> _$NpcStateToJson(_NpcState instance) => <String, dynamic>{
   'active': instance.active,
   'quit': instance.quit,
   'wish': ?_$InstrumentTypeEnumMap[instance.wish],
+  'retired': instance.retired,
 };
 
 _ExamRecord _$ExamRecordFromJson(Map<String, dynamic> json) => _ExamRecord(
@@ -268,7 +318,98 @@ Map<String, dynamic> _$PendingEventToJson(_PendingEvent instance) =>
 
 const _$PendingEventTypeEnumMap = {
   PendingEventType.instrumentDecision: 'instrumentDecision',
+  PendingEventType.audition: 'audition',
+  PendingEventType.contest: 'contest',
+  PendingEventType.executiveSelection: 'executiveSelection',
+  PendingEventType.concert: 'concert',
 };
+
+_ContestProgress _$ContestProgressFromJson(Map<String, dynamic> json) =>
+    _ContestProgress(
+      fiscalYear: (json['fiscalYear'] as num).toInt(),
+      division: $enumDecode(_$BandDivisionEnumMap, json['division']),
+      nextStage: $enumDecodeNullable(_$ContestStageEnumMap, json['nextStage']),
+      results:
+          (json['results'] as List<dynamic>?)
+              ?.map(
+                (e) => ContestStageResult.fromJson(e as Map<String, dynamic>),
+              )
+              .toList() ??
+          const <ContestStageResult>[],
+      finishedTurn: (json['finishedTurn'] as num?)?.toInt(),
+      retirementDone: json['retirementDone'] as bool? ?? false,
+    );
+
+Map<String, dynamic> _$ContestProgressToJson(_ContestProgress instance) =>
+    <String, dynamic>{
+      'fiscalYear': instance.fiscalYear,
+      'division': _$BandDivisionEnumMap[instance.division]!,
+      'nextStage': ?_$ContestStageEnumMap[instance.nextStage],
+      'results': instance.results.map((e) => e.toJson()).toList(),
+      'finishedTurn': ?instance.finishedTurn,
+      'retirementDone': instance.retirementDone,
+    };
+
+const _$BandDivisionEnumMap = {
+  BandDivision.large: 'large',
+  BandDivision.small: 'small',
+};
+
+const _$ContestStageEnumMap = {
+  ContestStage.none: 'none',
+  ContestStage.district: 'district',
+  ContestStage.prefectural: 'prefectural',
+  ContestStage.block: 'block',
+  ContestStage.national: 'national',
+};
+
+_ContestStageResult _$ContestStageResultFromJson(Map<String, dynamic> json) =>
+    _ContestStageResult(
+      stage: $enumDecode(_$ContestStageEnumMap, json['stage']),
+      award: $enumDecode(_$ContestAwardEnumMap, json['award']),
+      advanced: json['advanced'] as bool,
+      score: (json['score'] as num).toInt(),
+      rank: (json['rank'] as num).toInt(),
+      entrants: (json['entrants'] as num).toInt(),
+      board:
+          (json['board'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+          const <String>[],
+    );
+
+Map<String, dynamic> _$ContestStageResultToJson(_ContestStageResult instance) =>
+    <String, dynamic>{
+      'stage': _$ContestStageEnumMap[instance.stage]!,
+      'award': _$ContestAwardEnumMap[instance.award]!,
+      'advanced': instance.advanced,
+      'score': instance.score,
+      'rank': instance.rank,
+      'entrants': instance.entrants,
+      'board': instance.board,
+    };
+
+const _$ContestAwardEnumMap = {
+  ContestAward.none: 'none',
+  ContestAward.gold: 'gold',
+  ContestAward.silver: 'silver',
+  ContestAward.bronze: 'bronze',
+};
+
+_Achievement _$AchievementFromJson(Map<String, dynamic> json) => _Achievement(
+  fiscalYear: (json['fiscalYear'] as num).toInt(),
+  schoolId: json['schoolId'] as String,
+  kind: json['kind'] as String,
+  label: json['label'] as String,
+  weight: (json['weight'] as num).toInt(),
+);
+
+Map<String, dynamic> _$AchievementToJson(_Achievement instance) =>
+    <String, dynamic>{
+      'fiscalYear': instance.fiscalYear,
+      'schoolId': instance.schoolId,
+      'kind': instance.kind,
+      'label': instance.label,
+      'weight': instance.weight,
+    };
 
 _WeekLog _$WeekLogFromJson(Map<String, dynamic> json) => _WeekLog(
   turn: (json['turn'] as num).toInt(),

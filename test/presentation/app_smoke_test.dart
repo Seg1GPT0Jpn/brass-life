@@ -3,6 +3,7 @@ import 'package:brass_life/app/providers.dart';
 import 'package:brass_life/app/router.dart';
 import 'package:brass_life/data/repositories/hive_game_save_repository.dart';
 import 'package:brass_life/data/repositories/hive_world_meta_repository.dart';
+import 'package:brass_life/domain/game/engine/time_manager.dart';
 import 'package:brass_life/domain/value_objects/person_enums.dart';
 import 'package:brass_life/presentation/game/game_controller.dart';
 import 'package:brass_life/presentation/world/world_controller.dart';
@@ -143,6 +144,27 @@ void main() {
     await tester.tap(find.text('月末までスキップ（イベントで停止）'));
     await tester.pumpAndSettle();
     expect(container.read(gameControllerProvider)!.turn, greaterThan(s.turn));
+
+    // 次のイベント（オーディション）まで進めてカードを選ぶ
+    for (
+      var i = 0;
+      i < 4 && find.text('アプローチカード（1枚選ぶ）').evaluate().isEmpty;
+      i++
+    ) {
+      final skip = find.text('次のイベントまで進める（最大半年）');
+      await tester.ensureVisible(skip);
+      await tester.pumpAndSettle();
+      await tester.tap(skip);
+      await tester.pumpAndSettle();
+    }
+    expect(find.text('アプローチカード（1枚選ぶ）'), findsOneWidget);
+    // カードの選択はコントローラ経由で行う（UI の表示はここまでで確認済み）
+    final ctx = container.read(gameContextProvider)!;
+    final pendingState = container.read(gameControllerProvider)!;
+    final firstCard = TimeManager(ctx).cardsOf(pendingState).first;
+    container.read(gameControllerProvider.notifier).resolveAudition(firstCard);
+    await tester.pumpAndSettle();
+    expect(container.read(gameControllerProvider)!.contest, isNotNull);
 
     for (final tab in ['部員', '人間関係', '記録', 'ホーム']) {
       await tester.tap(find.text(tab));

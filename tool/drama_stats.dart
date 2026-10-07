@@ -18,9 +18,7 @@ void main(List<String> args) {
   var s = tm.newGame(world);
   s = tm.submitAction(s, WeeklyAction.individualPractice);
   s = tm.resolveInstrumentDecision(s, [InstrumentType.trumpet]).state;
-  while (ctx.calendar.dateOf(s.turn).academicYearIndex < 2 && s.pending == null) {
-    s = tm.skipMonth(s, MonthlyPolicy.balanced);
-  }
+  s = tm.autoPlayMonths(s, 23, MonthlyPolicy.balanced);
   final counts = <String, int>{};
   for (final m in s.memories) {
     counts[m.reasonKey] = (counts[m.reasonKey] ?? 0) + 1;
