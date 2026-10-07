@@ -10,6 +10,7 @@ import '../../value_objects/personality.dart';
 import '../../value_objects/relationship_vector.dart';
 import '../../value_objects/school_enums.dart';
 import 'game_enums.dart';
+import 'player_setup.dart';
 
 part 'game_state.freezed.dart';
 part 'game_state.g.dart';
@@ -101,6 +102,9 @@ abstract class GameState with _$GameState {
 
     /// プレイヤーが在籍した学校（古い順）。
     @Default(<String>[]) List<String> schoolHistory,
+
+    /// 開始時の主人公の設定（Seed のままなら null）。
+    PlayerSetup? setup,
   }) = _GameState;
 
   factory GameState.fromJson(Map<String, dynamic> json) =>

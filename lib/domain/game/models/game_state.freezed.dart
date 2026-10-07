@@ -41,7 +41,8 @@ mixin _$GameState {
  int get preparedTurn;/// 進路（受験）の状況。
  EntranceExamState? get exam;/// 卒業した NPC の進学先（NPC ID → 学校 ID）。
  Map<String, String> get npcDestinations;/// プレイヤーが在籍した学校（古い順）。
- List<String> get schoolHistory;
+ List<String> get schoolHistory;/// 開始時の主人公の設定（Seed のままなら null）。
+ PlayerSetup? get setup;
 /// Create a copy of GameState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -55,20 +56,20 @@ $GameStateCopyWith<GameState> get copyWith => _$GameStateCopyWithImpl<GameState>
 @override
 bool operator ==(Object other) {
   final _this = this as GameState;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is GameState&&(identical(other.schemaVersion, _this.schemaVersion) || other.schemaVersion == _this.schemaVersion)&&(identical(other.worldSeed, _this.worldSeed) || other.worldSeed == _this.worldSeed)&&(identical(other.generatorVersion, _this.generatorVersion) || other.generatorVersion == _this.generatorVersion)&&(identical(other.turn, _this.turn) || other.turn == _this.turn)&&(identical(other.stage, _this.stage) || other.stage == _this.stage)&&(identical(other.player, _this.player) || other.player == _this.player)&&(identical(other.schoolId, _this.schoolId) || other.schoolId == _this.schoolId)&&const DeepCollectionEquality().equals(other.roster, _this.roster)&&const DeepCollectionEquality().equals(other.npcs, _this.npcs)&&const DeepCollectionEquality().equals(other.extraNpcs, _this.extraNpcs)&&const DeepCollectionEquality().equals(other.relations, _this.relations)&&const DeepCollectionEquality().equals(other.memories, _this.memories)&&(identical(other.memorySeq, _this.memorySeq) || other.memorySeq == _this.memorySeq)&&const DeepCollectionEquality().equals(other.logs, _this.logs)&&const DeepCollectionEquality().equals(other.choices, _this.choices)&&(identical(other.pending, _this.pending) || other.pending == _this.pending)&&(identical(other.policy, _this.policy) || other.policy == _this.policy)&&(identical(other.studyBeforeExams, _this.studyBeforeExams) || other.studyBeforeExams == _this.studyBeforeExams)&&const DeepCollectionEquality().equals(other.contestMembers, _this.contestMembers)&&(identical(other.soloistId, _this.soloistId) || other.soloistId == _this.soloistId)&&(identical(other.contest, _this.contest) || other.contest == _this.contest)&&const DeepCollectionEquality().equals(other.clubHistory, _this.clubHistory)&&const DeepCollectionEquality().equals(other.achievements, _this.achievements)&&const DeepCollectionEquality().equals(other.roles, _this.roles)&&(identical(other.executiveSelectionTurn, _this.executiveSelectionTurn) || other.executiveSelectionTurn == _this.executiveSelectionTurn)&&(identical(other.lastConcertYear, _this.lastConcertYear) || other.lastConcertYear == _this.lastConcertYear)&&(identical(other.preparedTurn, _this.preparedTurn) || other.preparedTurn == _this.preparedTurn)&&(identical(other.exam, _this.exam) || other.exam == _this.exam)&&const DeepCollectionEquality().equals(other.npcDestinations, _this.npcDestinations)&&const DeepCollectionEquality().equals(other.schoolHistory, _this.schoolHistory));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GameState&&(identical(other.schemaVersion, _this.schemaVersion) || other.schemaVersion == _this.schemaVersion)&&(identical(other.worldSeed, _this.worldSeed) || other.worldSeed == _this.worldSeed)&&(identical(other.generatorVersion, _this.generatorVersion) || other.generatorVersion == _this.generatorVersion)&&(identical(other.turn, _this.turn) || other.turn == _this.turn)&&(identical(other.stage, _this.stage) || other.stage == _this.stage)&&(identical(other.player, _this.player) || other.player == _this.player)&&(identical(other.schoolId, _this.schoolId) || other.schoolId == _this.schoolId)&&const DeepCollectionEquality().equals(other.roster, _this.roster)&&const DeepCollectionEquality().equals(other.npcs, _this.npcs)&&const DeepCollectionEquality().equals(other.extraNpcs, _this.extraNpcs)&&const DeepCollectionEquality().equals(other.relations, _this.relations)&&const DeepCollectionEquality().equals(other.memories, _this.memories)&&(identical(other.memorySeq, _this.memorySeq) || other.memorySeq == _this.memorySeq)&&const DeepCollectionEquality().equals(other.logs, _this.logs)&&const DeepCollectionEquality().equals(other.choices, _this.choices)&&(identical(other.pending, _this.pending) || other.pending == _this.pending)&&(identical(other.policy, _this.policy) || other.policy == _this.policy)&&(identical(other.studyBeforeExams, _this.studyBeforeExams) || other.studyBeforeExams == _this.studyBeforeExams)&&const DeepCollectionEquality().equals(other.contestMembers, _this.contestMembers)&&(identical(other.soloistId, _this.soloistId) || other.soloistId == _this.soloistId)&&(identical(other.contest, _this.contest) || other.contest == _this.contest)&&const DeepCollectionEquality().equals(other.clubHistory, _this.clubHistory)&&const DeepCollectionEquality().equals(other.achievements, _this.achievements)&&const DeepCollectionEquality().equals(other.roles, _this.roles)&&(identical(other.executiveSelectionTurn, _this.executiveSelectionTurn) || other.executiveSelectionTurn == _this.executiveSelectionTurn)&&(identical(other.lastConcertYear, _this.lastConcertYear) || other.lastConcertYear == _this.lastConcertYear)&&(identical(other.preparedTurn, _this.preparedTurn) || other.preparedTurn == _this.preparedTurn)&&(identical(other.exam, _this.exam) || other.exam == _this.exam)&&const DeepCollectionEquality().equals(other.npcDestinations, _this.npcDestinations)&&const DeepCollectionEquality().equals(other.schoolHistory, _this.schoolHistory)&&(identical(other.setup, _this.setup) || other.setup == _this.setup));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as GameState;
-  return Object.hashAll([runtimeType,_this.schemaVersion,_this.worldSeed,_this.generatorVersion,_this.turn,_this.stage,_this.player,_this.schoolId,const DeepCollectionEquality().hash(_this.roster),const DeepCollectionEquality().hash(_this.npcs),const DeepCollectionEquality().hash(_this.extraNpcs),const DeepCollectionEquality().hash(_this.relations),const DeepCollectionEquality().hash(_this.memories),_this.memorySeq,const DeepCollectionEquality().hash(_this.logs),const DeepCollectionEquality().hash(_this.choices),_this.pending,_this.policy,_this.studyBeforeExams,const DeepCollectionEquality().hash(_this.contestMembers),_this.soloistId,_this.contest,const DeepCollectionEquality().hash(_this.clubHistory),const DeepCollectionEquality().hash(_this.achievements),const DeepCollectionEquality().hash(_this.roles),_this.executiveSelectionTurn,_this.lastConcertYear,_this.preparedTurn,_this.exam,const DeepCollectionEquality().hash(_this.npcDestinations),const DeepCollectionEquality().hash(_this.schoolHistory)]);
+  return Object.hashAll([runtimeType,_this.schemaVersion,_this.worldSeed,_this.generatorVersion,_this.turn,_this.stage,_this.player,_this.schoolId,const DeepCollectionEquality().hash(_this.roster),const DeepCollectionEquality().hash(_this.npcs),const DeepCollectionEquality().hash(_this.extraNpcs),const DeepCollectionEquality().hash(_this.relations),const DeepCollectionEquality().hash(_this.memories),_this.memorySeq,const DeepCollectionEquality().hash(_this.logs),const DeepCollectionEquality().hash(_this.choices),_this.pending,_this.policy,_this.studyBeforeExams,const DeepCollectionEquality().hash(_this.contestMembers),_this.soloistId,_this.contest,const DeepCollectionEquality().hash(_this.clubHistory),const DeepCollectionEquality().hash(_this.achievements),const DeepCollectionEquality().hash(_this.roles),_this.executiveSelectionTurn,_this.lastConcertYear,_this.preparedTurn,_this.exam,const DeepCollectionEquality().hash(_this.npcDestinations),const DeepCollectionEquality().hash(_this.schoolHistory),_this.setup]);
 }
 
 @override
 String toString() {
   final _this = this as GameState;
-  return 'GameState(schemaVersion: ${_this.schemaVersion}, worldSeed: ${_this.worldSeed}, generatorVersion: ${_this.generatorVersion}, turn: ${_this.turn}, stage: ${_this.stage}, player: ${_this.player}, schoolId: ${_this.schoolId}, roster: ${_this.roster}, npcs: ${_this.npcs}, extraNpcs: ${_this.extraNpcs}, relations: ${_this.relations}, memories: ${_this.memories}, memorySeq: ${_this.memorySeq}, logs: ${_this.logs}, choices: ${_this.choices}, pending: ${_this.pending}, policy: ${_this.policy}, studyBeforeExams: ${_this.studyBeforeExams}, contestMembers: ${_this.contestMembers}, soloistId: ${_this.soloistId}, contest: ${_this.contest}, clubHistory: ${_this.clubHistory}, achievements: ${_this.achievements}, roles: ${_this.roles}, executiveSelectionTurn: ${_this.executiveSelectionTurn}, lastConcertYear: ${_this.lastConcertYear}, preparedTurn: ${_this.preparedTurn}, exam: ${_this.exam}, npcDestinations: ${_this.npcDestinations}, schoolHistory: ${_this.schoolHistory})';
+  return 'GameState(schemaVersion: ${_this.schemaVersion}, worldSeed: ${_this.worldSeed}, generatorVersion: ${_this.generatorVersion}, turn: ${_this.turn}, stage: ${_this.stage}, player: ${_this.player}, schoolId: ${_this.schoolId}, roster: ${_this.roster}, npcs: ${_this.npcs}, extraNpcs: ${_this.extraNpcs}, relations: ${_this.relations}, memories: ${_this.memories}, memorySeq: ${_this.memorySeq}, logs: ${_this.logs}, choices: ${_this.choices}, pending: ${_this.pending}, policy: ${_this.policy}, studyBeforeExams: ${_this.studyBeforeExams}, contestMembers: ${_this.contestMembers}, soloistId: ${_this.soloistId}, contest: ${_this.contest}, clubHistory: ${_this.clubHistory}, achievements: ${_this.achievements}, roles: ${_this.roles}, executiveSelectionTurn: ${_this.executiveSelectionTurn}, lastConcertYear: ${_this.lastConcertYear}, preparedTurn: ${_this.preparedTurn}, exam: ${_this.exam}, npcDestinations: ${_this.npcDestinations}, schoolHistory: ${_this.schoolHistory}, setup: ${_this.setup})';
 }
 
 
@@ -79,11 +80,11 @@ abstract mixin class $GameStateCopyWith<$Res>  {
   factory $GameStateCopyWith(GameState value, $Res Function(GameState) _then) = _$GameStateCopyWithImpl;
 @useResult
 $Res call({
- int schemaVersion, int worldSeed, int generatorVersion, int turn, GameStage stage, PlayerState player, String schoolId, List<String> roster, Map<String, NpcState> npcs, Map<String, Npc> extraNpcs, Map<String, RelationshipVector> relations, List<MemoryTag> memories, int memorySeq, List<WeekLog> logs, List<String> choices, PendingEvent? pending, MonthlyPolicy policy, bool studyBeforeExams, List<String> contestMembers, String? soloistId, ContestProgress? contest, List<ContestRecord> clubHistory, List<Achievement> achievements, Map<String, ClubRole> roles, int? executiveSelectionTurn, int? lastConcertYear, int preparedTurn, EntranceExamState? exam, Map<String, String> npcDestinations, List<String> schoolHistory
+ int schemaVersion, int worldSeed, int generatorVersion, int turn, GameStage stage, PlayerState player, String schoolId, List<String> roster, Map<String, NpcState> npcs, Map<String, Npc> extraNpcs, Map<String, RelationshipVector> relations, List<MemoryTag> memories, int memorySeq, List<WeekLog> logs, List<String> choices, PendingEvent? pending, MonthlyPolicy policy, bool studyBeforeExams, List<String> contestMembers, String? soloistId, ContestProgress? contest, List<ContestRecord> clubHistory, List<Achievement> achievements, Map<String, ClubRole> roles, int? executiveSelectionTurn, int? lastConcertYear, int preparedTurn, EntranceExamState? exam, Map<String, String> npcDestinations, List<String> schoolHistory, PlayerSetup? setup
 });
 
 
-$PlayerStateCopyWith<$Res> get player;$PendingEventCopyWith<$Res>? get pending;$ContestProgressCopyWith<$Res>? get contest;$EntranceExamStateCopyWith<$Res>? get exam;
+$PlayerStateCopyWith<$Res> get player;$PendingEventCopyWith<$Res>? get pending;$ContestProgressCopyWith<$Res>? get contest;$EntranceExamStateCopyWith<$Res>? get exam;$PlayerSetupCopyWith<$Res>? get setup;
 
 }
 /// @nodoc
@@ -96,7 +97,7 @@ class _$GameStateCopyWithImpl<$Res>
 
 /// Create a copy of GameState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? schemaVersion = null,Object? worldSeed = null,Object? generatorVersion = null,Object? turn = null,Object? stage = null,Object? player = null,Object? schoolId = null,Object? roster = null,Object? npcs = null,Object? extraNpcs = null,Object? relations = null,Object? memories = null,Object? memorySeq = null,Object? logs = null,Object? choices = null,Object? pending = freezed,Object? policy = null,Object? studyBeforeExams = null,Object? contestMembers = null,Object? soloistId = freezed,Object? contest = freezed,Object? clubHistory = null,Object? achievements = null,Object? roles = null,Object? executiveSelectionTurn = freezed,Object? lastConcertYear = freezed,Object? preparedTurn = null,Object? exam = freezed,Object? npcDestinations = null,Object? schoolHistory = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? schemaVersion = null,Object? worldSeed = null,Object? generatorVersion = null,Object? turn = null,Object? stage = null,Object? player = null,Object? schoolId = null,Object? roster = null,Object? npcs = null,Object? extraNpcs = null,Object? relations = null,Object? memories = null,Object? memorySeq = null,Object? logs = null,Object? choices = null,Object? pending = freezed,Object? policy = null,Object? studyBeforeExams = null,Object? contestMembers = null,Object? soloistId = freezed,Object? contest = freezed,Object? clubHistory = null,Object? achievements = null,Object? roles = null,Object? executiveSelectionTurn = freezed,Object? lastConcertYear = freezed,Object? preparedTurn = null,Object? exam = freezed,Object? npcDestinations = null,Object? schoolHistory = null,Object? setup = freezed,}) {
   return _then(GameState(
 schemaVersion: null == schemaVersion ? _self.schemaVersion : schemaVersion // ignore: cast_nullable_to_non_nullable
 as int,worldSeed: null == worldSeed ? _self.worldSeed : worldSeed // ignore: cast_nullable_to_non_nullable
@@ -128,7 +129,8 @@ as int?,preparedTurn: null == preparedTurn ? _self.preparedTurn : preparedTurn /
 as int,exam: freezed == exam ? _self.exam : exam // ignore: cast_nullable_to_non_nullable
 as EntranceExamState?,npcDestinations: null == npcDestinations ? _self.npcDestinations : npcDestinations // ignore: cast_nullable_to_non_nullable
 as Map<String, String>,schoolHistory: null == schoolHistory ? _self.schoolHistory : schoolHistory // ignore: cast_nullable_to_non_nullable
-as List<String>,
+as List<String>,setup: freezed == setup ? _self.setup : setup // ignore: cast_nullable_to_non_nullable
+as PlayerSetup?,
   ));
 }
 /// Create a copy of GameState
@@ -175,6 +177,18 @@ $EntranceExamStateCopyWith<$Res>? get exam {
 
   return $EntranceExamStateCopyWith<$Res>(_self.exam!, (value) {
     return _then(_self.copyWith(exam: value));
+  });
+}/// Create a copy of GameState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PlayerSetupCopyWith<$Res>? get setup {
+    if (_self.setup == null) {
+    return null;
+  }
+
+  return $PlayerSetupCopyWith<$Res>(_self.setup!, (value) {
+    return _then(_self.copyWith(setup: value));
   });
 }
 }
@@ -258,10 +272,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int schemaVersion,  int worldSeed,  int generatorVersion,  int turn,  GameStage stage,  PlayerState player,  String schoolId,  List<String> roster,  Map<String, NpcState> npcs,  Map<String, Npc> extraNpcs,  Map<String, RelationshipVector> relations,  List<MemoryTag> memories,  int memorySeq,  List<WeekLog> logs,  List<String> choices,  PendingEvent? pending,  MonthlyPolicy policy,  bool studyBeforeExams,  List<String> contestMembers,  String? soloistId,  ContestProgress? contest,  List<ContestRecord> clubHistory,  List<Achievement> achievements,  Map<String, ClubRole> roles,  int? executiveSelectionTurn,  int? lastConcertYear,  int preparedTurn,  EntranceExamState? exam,  Map<String, String> npcDestinations,  List<String> schoolHistory)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int schemaVersion,  int worldSeed,  int generatorVersion,  int turn,  GameStage stage,  PlayerState player,  String schoolId,  List<String> roster,  Map<String, NpcState> npcs,  Map<String, Npc> extraNpcs,  Map<String, RelationshipVector> relations,  List<MemoryTag> memories,  int memorySeq,  List<WeekLog> logs,  List<String> choices,  PendingEvent? pending,  MonthlyPolicy policy,  bool studyBeforeExams,  List<String> contestMembers,  String? soloistId,  ContestProgress? contest,  List<ContestRecord> clubHistory,  List<Achievement> achievements,  Map<String, ClubRole> roles,  int? executiveSelectionTurn,  int? lastConcertYear,  int preparedTurn,  EntranceExamState? exam,  Map<String, String> npcDestinations,  List<String> schoolHistory,  PlayerSetup? setup)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _GameState() when $default != null:
-return $default(_that.schemaVersion,_that.worldSeed,_that.generatorVersion,_that.turn,_that.stage,_that.player,_that.schoolId,_that.roster,_that.npcs,_that.extraNpcs,_that.relations,_that.memories,_that.memorySeq,_that.logs,_that.choices,_that.pending,_that.policy,_that.studyBeforeExams,_that.contestMembers,_that.soloistId,_that.contest,_that.clubHistory,_that.achievements,_that.roles,_that.executiveSelectionTurn,_that.lastConcertYear,_that.preparedTurn,_that.exam,_that.npcDestinations,_that.schoolHistory);case _:
+return $default(_that.schemaVersion,_that.worldSeed,_that.generatorVersion,_that.turn,_that.stage,_that.player,_that.schoolId,_that.roster,_that.npcs,_that.extraNpcs,_that.relations,_that.memories,_that.memorySeq,_that.logs,_that.choices,_that.pending,_that.policy,_that.studyBeforeExams,_that.contestMembers,_that.soloistId,_that.contest,_that.clubHistory,_that.achievements,_that.roles,_that.executiveSelectionTurn,_that.lastConcertYear,_that.preparedTurn,_that.exam,_that.npcDestinations,_that.schoolHistory,_that.setup);case _:
   return orElse();
 
 }
@@ -279,10 +293,10 @@ return $default(_that.schemaVersion,_that.worldSeed,_that.generatorVersion,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int schemaVersion,  int worldSeed,  int generatorVersion,  int turn,  GameStage stage,  PlayerState player,  String schoolId,  List<String> roster,  Map<String, NpcState> npcs,  Map<String, Npc> extraNpcs,  Map<String, RelationshipVector> relations,  List<MemoryTag> memories,  int memorySeq,  List<WeekLog> logs,  List<String> choices,  PendingEvent? pending,  MonthlyPolicy policy,  bool studyBeforeExams,  List<String> contestMembers,  String? soloistId,  ContestProgress? contest,  List<ContestRecord> clubHistory,  List<Achievement> achievements,  Map<String, ClubRole> roles,  int? executiveSelectionTurn,  int? lastConcertYear,  int preparedTurn,  EntranceExamState? exam,  Map<String, String> npcDestinations,  List<String> schoolHistory)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int schemaVersion,  int worldSeed,  int generatorVersion,  int turn,  GameStage stage,  PlayerState player,  String schoolId,  List<String> roster,  Map<String, NpcState> npcs,  Map<String, Npc> extraNpcs,  Map<String, RelationshipVector> relations,  List<MemoryTag> memories,  int memorySeq,  List<WeekLog> logs,  List<String> choices,  PendingEvent? pending,  MonthlyPolicy policy,  bool studyBeforeExams,  List<String> contestMembers,  String? soloistId,  ContestProgress? contest,  List<ContestRecord> clubHistory,  List<Achievement> achievements,  Map<String, ClubRole> roles,  int? executiveSelectionTurn,  int? lastConcertYear,  int preparedTurn,  EntranceExamState? exam,  Map<String, String> npcDestinations,  List<String> schoolHistory,  PlayerSetup? setup)  $default,) {final _that = this;
 switch (_that) {
 case _GameState():
-return $default(_that.schemaVersion,_that.worldSeed,_that.generatorVersion,_that.turn,_that.stage,_that.player,_that.schoolId,_that.roster,_that.npcs,_that.extraNpcs,_that.relations,_that.memories,_that.memorySeq,_that.logs,_that.choices,_that.pending,_that.policy,_that.studyBeforeExams,_that.contestMembers,_that.soloistId,_that.contest,_that.clubHistory,_that.achievements,_that.roles,_that.executiveSelectionTurn,_that.lastConcertYear,_that.preparedTurn,_that.exam,_that.npcDestinations,_that.schoolHistory);case _:
+return $default(_that.schemaVersion,_that.worldSeed,_that.generatorVersion,_that.turn,_that.stage,_that.player,_that.schoolId,_that.roster,_that.npcs,_that.extraNpcs,_that.relations,_that.memories,_that.memorySeq,_that.logs,_that.choices,_that.pending,_that.policy,_that.studyBeforeExams,_that.contestMembers,_that.soloistId,_that.contest,_that.clubHistory,_that.achievements,_that.roles,_that.executiveSelectionTurn,_that.lastConcertYear,_that.preparedTurn,_that.exam,_that.npcDestinations,_that.schoolHistory,_that.setup);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -299,10 +313,10 @@ return $default(_that.schemaVersion,_that.worldSeed,_that.generatorVersion,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int schemaVersion,  int worldSeed,  int generatorVersion,  int turn,  GameStage stage,  PlayerState player,  String schoolId,  List<String> roster,  Map<String, NpcState> npcs,  Map<String, Npc> extraNpcs,  Map<String, RelationshipVector> relations,  List<MemoryTag> memories,  int memorySeq,  List<WeekLog> logs,  List<String> choices,  PendingEvent? pending,  MonthlyPolicy policy,  bool studyBeforeExams,  List<String> contestMembers,  String? soloistId,  ContestProgress? contest,  List<ContestRecord> clubHistory,  List<Achievement> achievements,  Map<String, ClubRole> roles,  int? executiveSelectionTurn,  int? lastConcertYear,  int preparedTurn,  EntranceExamState? exam,  Map<String, String> npcDestinations,  List<String> schoolHistory)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int schemaVersion,  int worldSeed,  int generatorVersion,  int turn,  GameStage stage,  PlayerState player,  String schoolId,  List<String> roster,  Map<String, NpcState> npcs,  Map<String, Npc> extraNpcs,  Map<String, RelationshipVector> relations,  List<MemoryTag> memories,  int memorySeq,  List<WeekLog> logs,  List<String> choices,  PendingEvent? pending,  MonthlyPolicy policy,  bool studyBeforeExams,  List<String> contestMembers,  String? soloistId,  ContestProgress? contest,  List<ContestRecord> clubHistory,  List<Achievement> achievements,  Map<String, ClubRole> roles,  int? executiveSelectionTurn,  int? lastConcertYear,  int preparedTurn,  EntranceExamState? exam,  Map<String, String> npcDestinations,  List<String> schoolHistory,  PlayerSetup? setup)?  $default,) {final _that = this;
 switch (_that) {
 case _GameState() when $default != null:
-return $default(_that.schemaVersion,_that.worldSeed,_that.generatorVersion,_that.turn,_that.stage,_that.player,_that.schoolId,_that.roster,_that.npcs,_that.extraNpcs,_that.relations,_that.memories,_that.memorySeq,_that.logs,_that.choices,_that.pending,_that.policy,_that.studyBeforeExams,_that.contestMembers,_that.soloistId,_that.contest,_that.clubHistory,_that.achievements,_that.roles,_that.executiveSelectionTurn,_that.lastConcertYear,_that.preparedTurn,_that.exam,_that.npcDestinations,_that.schoolHistory);case _:
+return $default(_that.schemaVersion,_that.worldSeed,_that.generatorVersion,_that.turn,_that.stage,_that.player,_that.schoolId,_that.roster,_that.npcs,_that.extraNpcs,_that.relations,_that.memories,_that.memorySeq,_that.logs,_that.choices,_that.pending,_that.policy,_that.studyBeforeExams,_that.contestMembers,_that.soloistId,_that.contest,_that.clubHistory,_that.achievements,_that.roles,_that.executiveSelectionTurn,_that.lastConcertYear,_that.preparedTurn,_that.exam,_that.npcDestinations,_that.schoolHistory,_that.setup);case _:
   return null;
 
 }
@@ -314,7 +328,7 @@ return $default(_that.schemaVersion,_that.worldSeed,_that.generatorVersion,_that
 @JsonSerializable()
 
 class _GameState implements GameState {
-  const _GameState({this.schemaVersion = 1, required this.worldSeed, required this.generatorVersion, required this.turn, required this.stage, required this.player, required this.schoolId, required  List<String> roster, required  Map<String, NpcState> npcs,  Map<String, Npc> extraNpcs = const <String, Npc>{},  Map<String, RelationshipVector> relations = const <String, RelationshipVector>{},  List<MemoryTag> memories = const <MemoryTag>[], this.memorySeq = 0,  List<WeekLog> logs = const <WeekLog>[],  List<String> choices = const <String>[], this.pending, this.policy = MonthlyPolicy.balanced, this.studyBeforeExams = true,  List<String> contestMembers = const <String>[], this.soloistId, this.contest,  List<ContestRecord> clubHistory = const <ContestRecord>[],  List<Achievement> achievements = const <Achievement>[],  Map<String, ClubRole> roles = const <String, ClubRole>{}, this.executiveSelectionTurn, this.lastConcertYear, this.preparedTurn = -1, this.exam,  Map<String, String> npcDestinations = const <String, String>{},  List<String> schoolHistory = const <String>[]}): _roster = roster,_npcs = npcs,_extraNpcs = extraNpcs,_relations = relations,_memories = memories,_logs = logs,_choices = choices,_contestMembers = contestMembers,_clubHistory = clubHistory,_achievements = achievements,_roles = roles,_npcDestinations = npcDestinations,_schoolHistory = schoolHistory;
+  const _GameState({this.schemaVersion = 1, required this.worldSeed, required this.generatorVersion, required this.turn, required this.stage, required this.player, required this.schoolId, required  List<String> roster, required  Map<String, NpcState> npcs,  Map<String, Npc> extraNpcs = const <String, Npc>{},  Map<String, RelationshipVector> relations = const <String, RelationshipVector>{},  List<MemoryTag> memories = const <MemoryTag>[], this.memorySeq = 0,  List<WeekLog> logs = const <WeekLog>[],  List<String> choices = const <String>[], this.pending, this.policy = MonthlyPolicy.balanced, this.studyBeforeExams = true,  List<String> contestMembers = const <String>[], this.soloistId, this.contest,  List<ContestRecord> clubHistory = const <ContestRecord>[],  List<Achievement> achievements = const <Achievement>[],  Map<String, ClubRole> roles = const <String, ClubRole>{}, this.executiveSelectionTurn, this.lastConcertYear, this.preparedTurn = -1, this.exam,  Map<String, String> npcDestinations = const <String, String>{},  List<String> schoolHistory = const <String>[], this.setup}): _roster = roster,_npcs = npcs,_extraNpcs = extraNpcs,_relations = relations,_memories = memories,_logs = logs,_choices = choices,_contestMembers = contestMembers,_clubHistory = clubHistory,_achievements = achievements,_roles = roles,_npcDestinations = npcDestinations,_schoolHistory = schoolHistory;
   factory _GameState.fromJson(Map<String, dynamic> json) => _$GameStateFromJson(json);
 
 /// 保存形式のバージョン。
@@ -463,6 +477,8 @@ class _GameState implements GameState {
   return EqualUnmodifiableListView(_schoolHistory);
 }
 
+/// 開始時の主人公の設定（Seed のままなら null）。
+@override final  PlayerSetup? setup;
 
 /// Create a copy of GameState
 /// with the given fields replaced by the non-null parameter values.
@@ -477,18 +493,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _GameState&&(identical(other.schemaVersion, schemaVersion) || other.schemaVersion == schemaVersion)&&(identical(other.worldSeed, worldSeed) || other.worldSeed == worldSeed)&&(identical(other.generatorVersion, generatorVersion) || other.generatorVersion == generatorVersion)&&(identical(other.turn, turn) || other.turn == turn)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.player, player) || other.player == player)&&(identical(other.schoolId, schoolId) || other.schoolId == schoolId)&&const DeepCollectionEquality().equals(other.roster, _roster)&&const DeepCollectionEquality().equals(other.npcs, _npcs)&&const DeepCollectionEquality().equals(other.extraNpcs, _extraNpcs)&&const DeepCollectionEquality().equals(other.relations, _relations)&&const DeepCollectionEquality().equals(other.memories, _memories)&&(identical(other.memorySeq, memorySeq) || other.memorySeq == memorySeq)&&const DeepCollectionEquality().equals(other.logs, _logs)&&const DeepCollectionEquality().equals(other.choices, _choices)&&(identical(other.pending, pending) || other.pending == pending)&&(identical(other.policy, policy) || other.policy == policy)&&(identical(other.studyBeforeExams, studyBeforeExams) || other.studyBeforeExams == studyBeforeExams)&&const DeepCollectionEquality().equals(other.contestMembers, _contestMembers)&&(identical(other.soloistId, soloistId) || other.soloistId == soloistId)&&(identical(other.contest, contest) || other.contest == contest)&&const DeepCollectionEquality().equals(other.clubHistory, _clubHistory)&&const DeepCollectionEquality().equals(other.achievements, _achievements)&&const DeepCollectionEquality().equals(other.roles, _roles)&&(identical(other.executiveSelectionTurn, executiveSelectionTurn) || other.executiveSelectionTurn == executiveSelectionTurn)&&(identical(other.lastConcertYear, lastConcertYear) || other.lastConcertYear == lastConcertYear)&&(identical(other.preparedTurn, preparedTurn) || other.preparedTurn == preparedTurn)&&(identical(other.exam, exam) || other.exam == exam)&&const DeepCollectionEquality().equals(other.npcDestinations, _npcDestinations)&&const DeepCollectionEquality().equals(other.schoolHistory, _schoolHistory));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _GameState&&(identical(other.schemaVersion, schemaVersion) || other.schemaVersion == schemaVersion)&&(identical(other.worldSeed, worldSeed) || other.worldSeed == worldSeed)&&(identical(other.generatorVersion, generatorVersion) || other.generatorVersion == generatorVersion)&&(identical(other.turn, turn) || other.turn == turn)&&(identical(other.stage, stage) || other.stage == stage)&&(identical(other.player, player) || other.player == player)&&(identical(other.schoolId, schoolId) || other.schoolId == schoolId)&&const DeepCollectionEquality().equals(other.roster, _roster)&&const DeepCollectionEquality().equals(other.npcs, _npcs)&&const DeepCollectionEquality().equals(other.extraNpcs, _extraNpcs)&&const DeepCollectionEquality().equals(other.relations, _relations)&&const DeepCollectionEquality().equals(other.memories, _memories)&&(identical(other.memorySeq, memorySeq) || other.memorySeq == memorySeq)&&const DeepCollectionEquality().equals(other.logs, _logs)&&const DeepCollectionEquality().equals(other.choices, _choices)&&(identical(other.pending, pending) || other.pending == pending)&&(identical(other.policy, policy) || other.policy == policy)&&(identical(other.studyBeforeExams, studyBeforeExams) || other.studyBeforeExams == studyBeforeExams)&&const DeepCollectionEquality().equals(other.contestMembers, _contestMembers)&&(identical(other.soloistId, soloistId) || other.soloistId == soloistId)&&(identical(other.contest, contest) || other.contest == contest)&&const DeepCollectionEquality().equals(other.clubHistory, _clubHistory)&&const DeepCollectionEquality().equals(other.achievements, _achievements)&&const DeepCollectionEquality().equals(other.roles, _roles)&&(identical(other.executiveSelectionTurn, executiveSelectionTurn) || other.executiveSelectionTurn == executiveSelectionTurn)&&(identical(other.lastConcertYear, lastConcertYear) || other.lastConcertYear == lastConcertYear)&&(identical(other.preparedTurn, preparedTurn) || other.preparedTurn == preparedTurn)&&(identical(other.exam, exam) || other.exam == exam)&&const DeepCollectionEquality().equals(other.npcDestinations, _npcDestinations)&&const DeepCollectionEquality().equals(other.schoolHistory, _schoolHistory)&&(identical(other.setup, setup) || other.setup == setup));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hashAll([runtimeType,schemaVersion,worldSeed,generatorVersion,turn,stage,player,schoolId,const DeepCollectionEquality().hash(_roster),const DeepCollectionEquality().hash(_npcs),const DeepCollectionEquality().hash(_extraNpcs),const DeepCollectionEquality().hash(_relations),const DeepCollectionEquality().hash(_memories),memorySeq,const DeepCollectionEquality().hash(_logs),const DeepCollectionEquality().hash(_choices),pending,policy,studyBeforeExams,const DeepCollectionEquality().hash(_contestMembers),soloistId,contest,const DeepCollectionEquality().hash(_clubHistory),const DeepCollectionEquality().hash(_achievements),const DeepCollectionEquality().hash(_roles),executiveSelectionTurn,lastConcertYear,preparedTurn,exam,const DeepCollectionEquality().hash(_npcDestinations),const DeepCollectionEquality().hash(_schoolHistory)]);
+    return Object.hashAll([runtimeType,schemaVersion,worldSeed,generatorVersion,turn,stage,player,schoolId,const DeepCollectionEquality().hash(_roster),const DeepCollectionEquality().hash(_npcs),const DeepCollectionEquality().hash(_extraNpcs),const DeepCollectionEquality().hash(_relations),const DeepCollectionEquality().hash(_memories),memorySeq,const DeepCollectionEquality().hash(_logs),const DeepCollectionEquality().hash(_choices),pending,policy,studyBeforeExams,const DeepCollectionEquality().hash(_contestMembers),soloistId,contest,const DeepCollectionEquality().hash(_clubHistory),const DeepCollectionEquality().hash(_achievements),const DeepCollectionEquality().hash(_roles),executiveSelectionTurn,lastConcertYear,preparedTurn,exam,const DeepCollectionEquality().hash(_npcDestinations),const DeepCollectionEquality().hash(_schoolHistory),setup]);
 }
 
 @override
 String toString() {
-    return 'GameState(schemaVersion: $schemaVersion, worldSeed: $worldSeed, generatorVersion: $generatorVersion, turn: $turn, stage: $stage, player: $player, schoolId: $schoolId, roster: $roster, npcs: $npcs, extraNpcs: $extraNpcs, relations: $relations, memories: $memories, memorySeq: $memorySeq, logs: $logs, choices: $choices, pending: $pending, policy: $policy, studyBeforeExams: $studyBeforeExams, contestMembers: $contestMembers, soloistId: $soloistId, contest: $contest, clubHistory: $clubHistory, achievements: $achievements, roles: $roles, executiveSelectionTurn: $executiveSelectionTurn, lastConcertYear: $lastConcertYear, preparedTurn: $preparedTurn, exam: $exam, npcDestinations: $npcDestinations, schoolHistory: $schoolHistory)';
+    return 'GameState(schemaVersion: $schemaVersion, worldSeed: $worldSeed, generatorVersion: $generatorVersion, turn: $turn, stage: $stage, player: $player, schoolId: $schoolId, roster: $roster, npcs: $npcs, extraNpcs: $extraNpcs, relations: $relations, memories: $memories, memorySeq: $memorySeq, logs: $logs, choices: $choices, pending: $pending, policy: $policy, studyBeforeExams: $studyBeforeExams, contestMembers: $contestMembers, soloistId: $soloistId, contest: $contest, clubHistory: $clubHistory, achievements: $achievements, roles: $roles, executiveSelectionTurn: $executiveSelectionTurn, lastConcertYear: $lastConcertYear, preparedTurn: $preparedTurn, exam: $exam, npcDestinations: $npcDestinations, schoolHistory: $schoolHistory, setup: $setup)';
 }
 
 
@@ -499,11 +515,11 @@ abstract mixin class _$GameStateCopyWith<$Res> implements $GameStateCopyWith<$Re
   factory _$GameStateCopyWith(_GameState value, $Res Function(_GameState) _then) = __$GameStateCopyWithImpl;
 @override @useResult
 $Res call({
- int schemaVersion, int worldSeed, int generatorVersion, int turn, GameStage stage, PlayerState player, String schoolId, List<String> roster, Map<String, NpcState> npcs, Map<String, Npc> extraNpcs, Map<String, RelationshipVector> relations, List<MemoryTag> memories, int memorySeq, List<WeekLog> logs, List<String> choices, PendingEvent? pending, MonthlyPolicy policy, bool studyBeforeExams, List<String> contestMembers, String? soloistId, ContestProgress? contest, List<ContestRecord> clubHistory, List<Achievement> achievements, Map<String, ClubRole> roles, int? executiveSelectionTurn, int? lastConcertYear, int preparedTurn, EntranceExamState? exam, Map<String, String> npcDestinations, List<String> schoolHistory
+ int schemaVersion, int worldSeed, int generatorVersion, int turn, GameStage stage, PlayerState player, String schoolId, List<String> roster, Map<String, NpcState> npcs, Map<String, Npc> extraNpcs, Map<String, RelationshipVector> relations, List<MemoryTag> memories, int memorySeq, List<WeekLog> logs, List<String> choices, PendingEvent? pending, MonthlyPolicy policy, bool studyBeforeExams, List<String> contestMembers, String? soloistId, ContestProgress? contest, List<ContestRecord> clubHistory, List<Achievement> achievements, Map<String, ClubRole> roles, int? executiveSelectionTurn, int? lastConcertYear, int preparedTurn, EntranceExamState? exam, Map<String, String> npcDestinations, List<String> schoolHistory, PlayerSetup? setup
 });
 
 
-@override $PlayerStateCopyWith<$Res> get player;@override $PendingEventCopyWith<$Res>? get pending;@override $ContestProgressCopyWith<$Res>? get contest;@override $EntranceExamStateCopyWith<$Res>? get exam;
+@override $PlayerStateCopyWith<$Res> get player;@override $PendingEventCopyWith<$Res>? get pending;@override $ContestProgressCopyWith<$Res>? get contest;@override $EntranceExamStateCopyWith<$Res>? get exam;@override $PlayerSetupCopyWith<$Res>? get setup;
 
 }
 /// @nodoc
@@ -516,7 +532,7 @@ class __$GameStateCopyWithImpl<$Res>
 
 /// Create a copy of GameState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? schemaVersion = null,Object? worldSeed = null,Object? generatorVersion = null,Object? turn = null,Object? stage = null,Object? player = null,Object? schoolId = null,Object? roster = null,Object? npcs = null,Object? extraNpcs = null,Object? relations = null,Object? memories = null,Object? memorySeq = null,Object? logs = null,Object? choices = null,Object? pending = freezed,Object? policy = null,Object? studyBeforeExams = null,Object? contestMembers = null,Object? soloistId = freezed,Object? contest = freezed,Object? clubHistory = null,Object? achievements = null,Object? roles = null,Object? executiveSelectionTurn = freezed,Object? lastConcertYear = freezed,Object? preparedTurn = null,Object? exam = freezed,Object? npcDestinations = null,Object? schoolHistory = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? schemaVersion = null,Object? worldSeed = null,Object? generatorVersion = null,Object? turn = null,Object? stage = null,Object? player = null,Object? schoolId = null,Object? roster = null,Object? npcs = null,Object? extraNpcs = null,Object? relations = null,Object? memories = null,Object? memorySeq = null,Object? logs = null,Object? choices = null,Object? pending = freezed,Object? policy = null,Object? studyBeforeExams = null,Object? contestMembers = null,Object? soloistId = freezed,Object? contest = freezed,Object? clubHistory = null,Object? achievements = null,Object? roles = null,Object? executiveSelectionTurn = freezed,Object? lastConcertYear = freezed,Object? preparedTurn = null,Object? exam = freezed,Object? npcDestinations = null,Object? schoolHistory = null,Object? setup = freezed,}) {
   return _then(_GameState(
 schemaVersion: null == schemaVersion ? _self.schemaVersion : schemaVersion // ignore: cast_nullable_to_non_nullable
 as int,worldSeed: null == worldSeed ? _self.worldSeed : worldSeed // ignore: cast_nullable_to_non_nullable
@@ -548,7 +564,8 @@ as int?,preparedTurn: null == preparedTurn ? _self.preparedTurn : preparedTurn /
 as int,exam: freezed == exam ? _self.exam : exam // ignore: cast_nullable_to_non_nullable
 as EntranceExamState?,npcDestinations: null == npcDestinations ? _self._npcDestinations : npcDestinations // ignore: cast_nullable_to_non_nullable
 as Map<String, String>,schoolHistory: null == schoolHistory ? _self._schoolHistory : schoolHistory // ignore: cast_nullable_to_non_nullable
-as List<String>,
+as List<String>,setup: freezed == setup ? _self.setup : setup // ignore: cast_nullable_to_non_nullable
+as PlayerSetup?,
   ));
 }
 
@@ -596,6 +613,18 @@ $EntranceExamStateCopyWith<$Res>? get exam {
 
   return $EntranceExamStateCopyWith<$Res>(_self.exam!, (value) {
     return _then(_self.copyWith(exam: value));
+  });
+}/// Create a copy of GameState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PlayerSetupCopyWith<$Res>? get setup {
+    if (_self.setup == null) {
+    return null;
+  }
+
+  return $PlayerSetupCopyWith<$Res>(_self.setup!, (value) {
+    return _then(_self.copyWith(setup: value));
   });
 }
 }

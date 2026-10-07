@@ -1,8 +1,10 @@
 import '../../entities/memory_tag.dart';
+import '../../entities/player.dart';
 import '../../entities/world.dart';
 import '../../value_objects/instrument.dart';
 import '../models/game_enums.dart';
 import '../models/game_state.dart';
+import '../models/player_setup.dart';
 import '../master/approach_cards.dart';
 import 'action_engine.dart';
 import 'audition_engine.dart';
@@ -10,6 +12,7 @@ import 'concert_engine.dart';
 import 'contest_engine.dart';
 import 'executive_engine.dart';
 import 'performance.dart';
+import 'player_setup_service.dart';
 import 'relations.dart';
 import 'game_context.dart';
 import 'instrument_decision.dart';
@@ -36,8 +39,9 @@ class TimeManager {
 
   static const int maxLogs = 160;
 
-  GameState newGame(World world) {
-    final p = world.player;
+  /// 新しい人生を始める。[setup] を省略すると Seed が決めた主人公で始める。
+  GameState newGame(World world, {PlayerSetup? setup}) {
+    final p = setup == null ? world.player : _playerFrom(world, setup);
     final club = ctx.index.clubOfSchool(p.schoolId);
     final (roster, npcs) = RosterService(ctx).initialRoster(club);
     var s = GameState(
@@ -49,6 +53,8 @@ class TimeManager {
       schoolHistory: [p.schoolId],
       roster: roster,
       npcs: npcs,
+      setup: setup,
+      choices: [if (setup != null) 'setup:custom'],
       player: PlayerState(
         familyName: p.familyName,
         givenName: p.givenName,
@@ -79,6 +85,28 @@ class TimeManager {
       '吹奏楽部の体験入部に参加。部員は ${roster.length} 人。来週、担当楽器が決まる。',
     ]);
     return _prepareTurn(s);
+  }
+
+  /// 設定から主人公（世界のプレイヤーと同じ形）を作る。
+  Player _playerFrom(World world, PlayerSetup setup) {
+    final service = PlayerSetupService(world);
+    final error = service.validate(setup);
+    if (error != null) throw ArgumentError(error);
+    return world.player.copyWith(
+      familyName: setup.familyName.trim(),
+      givenName: setup.givenName.trim(),
+      gender: setup.gender,
+      schoolId: setup.schoolId,
+      background: setup.background,
+      personality: setup.personality,
+      traits: service.traitsFor(setup.personality),
+      aptitude: PlayerSetupService.withBackground(
+        setup.aptitude,
+        setup.background,
+      ),
+      academic: setup.academic,
+      stamina: setup.stamina,
+    );
   }
 
   /// 通常週の行動を実行し、次の週へ進める。

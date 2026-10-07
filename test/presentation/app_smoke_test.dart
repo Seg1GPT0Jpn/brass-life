@@ -129,7 +129,22 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 600));
     });
     await tester.pumpAndSettle();
+    // 主人公をつくる画面: 名前を変えて始める
+    expect(find.text('主人公をつくる'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).at(0), '音羽');
+    await tester.enterText(find.byType(TextField).at(1), '奏');
+    await tester.pump();
+    final startButton = find.text('この主人公で始める');
+    await tester.scrollUntilVisible(
+      startButton,
+      400,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(startButton);
+    await tester.pumpAndSettle();
     expect(container.read(gameControllerProvider), isNotNull);
+    expect(container.read(gameControllerProvider)!.player.fullName, '音羽 奏');
     expect(find.text('今週の行動'), findsOneWidget);
 
     await tester.tap(find.textContaining('で1週間を過ごす'));

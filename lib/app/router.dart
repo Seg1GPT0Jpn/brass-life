@@ -8,6 +8,7 @@ import '../presentation/debug/school_detail/school_detail_page.dart';
 import '../presentation/debug/school_list/school_list_page.dart';
 import '../presentation/debug/shell/debug_shell.dart';
 import '../presentation/debug/world_overview/overview_page.dart';
+import '../presentation/game/character_creation_page.dart';
 import '../presentation/game/ending_page.dart';
 import '../presentation/game/game_controller.dart';
 import '../presentation/game/game_page.dart';
@@ -21,13 +22,21 @@ final routerProvider = Provider<GoRouter>((ref) {
     // 世界が未生成のままデバッグ画面の URL を開いた場合（Web のリロード等）はタイトルへ。
     redirect: (context, state) {
       final hasWorld = ref.read(worldControllerProvider).value != null;
-      if (!hasWorld && state.matchedLocation.startsWith('/debug')) return '/';
+      if (!hasWorld &&
+          (state.matchedLocation.startsWith('/debug') ||
+              state.matchedLocation.startsWith('/create'))) {
+        return '/';
+      }
       final hasGame = ref.read(gameControllerProvider) != null;
       if (!hasGame && state.matchedLocation.startsWith('/game')) return '/';
       return null;
     },
     routes: [
       GoRoute(path: '/', builder: (_, _) => const TitlePage()),
+      GoRoute(
+        path: '/create',
+        builder: (_, _) => const CharacterCreationPage(),
+      ),
       GoRoute(
         path: '/game',
         builder: (_, _) => const GamePage(),

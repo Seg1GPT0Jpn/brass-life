@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/app_info.dart';
 import '../../app/providers.dart';
+import '../game/character_creation_page.dart';
 import '../game/game_controller.dart';
 import '../world/world_controller.dart';
 import 'title_view_model.dart';
@@ -36,8 +37,8 @@ class _TitlePageState extends ConsumerState<TitlePage> {
     final ok = await ref.read(titleViewModelProvider.notifier).generate();
     _controller.text = ref.read(titleViewModelProvider).input;
     if (!ok || !mounted) return;
-    ref.read(gameControllerProvider.notifier).newGame();
-    context.go('/game');
+    ref.invalidate(characterCreationProvider);
+    context.go('/create');
   }
 
   Future<void> _delete(String slot) async {

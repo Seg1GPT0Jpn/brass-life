@@ -1,2 +1,2 @@
 /// ビルドの表示用情報。
-const String appBuildLabel = 'v1.0（Phase 6: 大学受験・エンディング・セーブスロット）';
+const String appBuildLabel = 'v1.1（主人公の設定に対応）';

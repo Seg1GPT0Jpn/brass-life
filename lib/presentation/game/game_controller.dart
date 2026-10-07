@@ -7,6 +7,7 @@ import '../../domain/game/engine/time_manager.dart';
 import '../../domain/game/master/approach_cards.dart';
 import '../../domain/game/models/game_enums.dart';
 import '../../domain/game/models/game_state.dart';
+import '../../domain/game/models/player_setup.dart';
 import '../../domain/game/models/save_summary.dart';
 import '../../domain/repositories/game_save_repository.dart';
 import '../../domain/services/world_generation/world_generator.dart';
@@ -21,7 +22,7 @@ final gameContextProvider = Provider<GameContext?>((ref) {
 
 /// ゲーム進行の ViewModel。状態の更新は必ず TimeManager を経由し、毎回オートセーブする。
 class GameController extends Notifier<GameState?> {
-    @override
+  @override
   GameState? build() {
     // 別の世界が生成されたら、その世界と合わないゲームは破棄する。
     // （watch すると読み込み直後に再構築されて状態が消えるため listen を使う）
@@ -36,7 +37,9 @@ class GameController extends Notifier<GameState?> {
   TimeManager get _tm => TimeManager(_ctx);
 
   /// 現在の世界で新しい人生を始める。
-  void newGame() => _commit(_tm.newGame(_ctx.world));
+  /// [setup] を省略すると Seed が決めた主人公で始める。
+  void newGame({PlayerSetup? setup}) =>
+      _commit(_tm.newGame(_ctx.world, setup: setup));
 
   void submit(WeeklyAction action) => _commit(_tm.submitAction(state!, action));
 

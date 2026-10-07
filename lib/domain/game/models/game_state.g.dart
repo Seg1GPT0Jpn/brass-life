@@ -90,6 +90,9 @@ _GameState _$GameStateFromJson(Map<String, dynamic> json) => _GameState(
           ?.map((e) => e as String)
           .toList() ??
       const <String>[],
+  setup: json['setup'] == null
+      ? null
+      : PlayerSetup.fromJson(json['setup'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$GameStateToJson(_GameState instance) =>
@@ -124,6 +127,7 @@ Map<String, dynamic> _$GameStateToJson(_GameState instance) =>
       'exam': ?instance.exam?.toJson(),
       'npcDestinations': instance.npcDestinations,
       'schoolHistory': instance.schoolHistory,
+      'setup': ?instance.setup?.toJson(),
     };
 
 const _$GameStageEnumMap = {
