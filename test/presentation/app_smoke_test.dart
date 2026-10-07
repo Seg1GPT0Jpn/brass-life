@@ -9,8 +9,11 @@ import 'package:brass_life/domain/game/engine/time_manager.dart';
 import 'package:brass_life/domain/game/models/game_enums.dart';
 import 'package:brass_life/domain/game/models/save_summary.dart';
 import 'package:brass_life/domain/services/world_generation/world_generator.dart';
+import 'package:brass_life/domain/value_objects/instrument.dart';
 import 'package:brass_life/domain/value_objects/person_enums.dart';
 import 'package:brass_life/presentation/game/game_controller.dart';
+import 'package:brass_life/presentation/game/scene/diorama_view.dart';
+import 'package:brass_life/presentation/game/scene/performance_stage.dart';
 import 'package:brass_life/presentation/world/world_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -145,9 +148,14 @@ void main() {
     await tester.pumpAndSettle();
     expect(container.read(gameControllerProvider), isNotNull);
     expect(container.read(gameControllerProvider)!.player.fullName, '音羽 奏');
-    expect(find.text('今週の行動'), findsOneWidget);
-
-    await tester.tap(find.textContaining('で1週間を過ごす'));
+    // ホームはジオラマ。自分（★）をタップ → 自主練メニュー
+    expect(find.byType(DioramaView), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('actor-player')));
+    await tester.pumpAndSettle();
+    expect(find.text('基礎練'), findsOneWidget);
+    expect(find.text('楽器メンテ'), findsOneWidget);
+    expect(find.text('担当楽器が決まってから'), findsOneWidget);
+    await tester.tap(find.text('曲練'));
     await tester.pumpAndSettle();
     expect(find.text('イベント：担当楽器の決定'), findsOneWidget);
 
@@ -158,25 +166,91 @@ void main() {
     expect(find.text('楽器決定'), findsWidgets);
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
-    final s = container.read(gameControllerProvider)!;
+    var s = container.read(gameControllerProvider)!;
     expect(s.player.instrument, isNotNull);
 
-    await tester.tap(find.text('月末までスキップ（イベントで停止）'));
+    // 部員をタップ → 相手との行動メニュー（雑談）
+    final ctx0 = container.read(gameContextProvider)!;
+    final mate = ctx0.activeMembers(s).first;
+    await tester.tap(find.byKey(ValueKey('actor-${mate.id}')));
+    await tester.pumpAndSettle();
+    expect(find.text('一緒に練習'), findsOneWidget);
+    expect(find.text('指導する'), findsOneWidget);
+    await tester.tap(find.text('雑談'));
+    await tester.pumpAndSettle();
+    s = container.read(gameControllerProvider)!;
+    expect(s.choices.last, endsWith('chat:${mate.id}'));
+
+    // 場所（音楽室）をタップ → 合奏練習 → 合奏の演出
+    final room = find.byKey(const ValueKey('loc-musicRoom'));
+    await tester.tapAt(tester.getTopLeft(room) + const Offset(6, 6));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('合奏練習'));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(PerformanceStage), findsOneWidget);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(find.byType(PerformanceStage), findsNothing);
+    s = container.read(gameControllerProvider)!;
+    expect(s.choices.last, endsWith('ensemble'));
+
+    // ホームの縦リスト（ジオラマ・方針パネル・ログのどれかが見えている）
+    Finder homeScrollable() {
+      for (final f in [
+        find.byType(DioramaView),
+        find.text('月の方針でまとめて進める'),
+        find.text('最近の出来事'),
+      ]) {
+        if (f.evaluate().isNotEmpty) {
+          final scrollable = find
+              .ancestor(of: f, matching: find.byType(Scrollable))
+              .first
+              .evaluate()
+              .first
+              .widget;
+          return find.byWidget(scrollable);
+        }
+      }
+      throw StateError('ホームのリストが見つからない');
+    }
+
+    final homeList = homeScrollable();
+    final skipMonth = find.text('月末までスキップ（イベントで停止）');
+    await tester.scrollUntilVisible(skipMonth, 300, scrollable: homeList);
+    await tester.pumpAndSettle();
+    await tester.tap(skipMonth);
     await tester.pumpAndSettle();
     expect(container.read(gameControllerProvider)!.turn, greaterThan(s.turn));
 
     // 次のイベント（オーディション）まで進めてカードを選ぶ
     for (
       var i = 0;
-      i < 4 && find.text('アプローチカード（1枚選ぶ）').evaluate().isEmpty;
+      i < 6 &&
+          container.read(gameControllerProvider)!.pending?.type !=
+              PendingEventType.audition;
       i++
     ) {
-      final skip = find.text('次のイベントまで進める（最大半年）');
-      await tester.ensureVisible(skip);
-      await tester.pumpAndSettle();
-      await tester.tap(skip);
+      // 方針パネルのボタンは月スキップで確認済みなので、ここはコントローラから進める
+      final vm = container.read(gameControllerProvider.notifier);
+      final cur = container.read(gameControllerProvider)!;
+      if (cur.pending != null && cur.pending!.type == PendingEventType.notice) {
+        vm.resolveNotice();
+      } else {
+        vm.skipToNextEvent(cur.policy);
+      }
       await tester.pumpAndSettle();
     }
+    expect(
+      container.read(gameControllerProvider)!.pending?.type,
+      PendingEventType.audition,
+    );
+    // イベントパネルはリストの先頭（上へスクロールして確認）
+    await tester.scrollUntilVisible(
+      find.text('アプローチカード（1枚選ぶ）'),
+      -300,
+      scrollable: homeScrollable(),
+    );
     expect(find.text('アプローチカード（1枚選ぶ）'), findsOneWidget);
     // カードの選択はコントローラ経由で行う（UI の表示はここまでで確認済み）
     final ctx = container.read(gameContextProvider)!;
@@ -195,6 +269,35 @@ void main() {
     container.read(routerProvider).go('/game/person/$firstMember');
     await tester.pumpAndSettle();
     expect(find.text('あなたとの関係'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('スマホ幅: ジオラマと合奏の演出が崩れない', (tester) async {
+    final container = await pumpApp(tester, const Size(390, 844));
+    await tester.runAsync(() async {
+      await container.read(worldControllerProvider.notifier).generate('TEST');
+    });
+    await tester.pumpAndSettle();
+    final vm = container.read(gameControllerProvider.notifier);
+    vm.newGame();
+    vm.submit(WeeklyAction.individualPractice);
+    vm.resolveInstrument([InstrumentType.flute]);
+    container.read(routerProvider).go('/game');
+    await tester.pumpAndSettle();
+    expect(find.byType(DioramaView), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('actor-player')));
+    await tester.pumpAndSettle();
+    expect(find.text('基礎練'), findsOneWidget);
+    await tester.tap(find.text('基礎練'));
+    await tester.pumpAndSettle();
+    final room = find.byKey(const ValueKey('loc-musicRoom'));
+    await tester.tapAt(tester.getTopLeft(room) + const Offset(4, 4));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('合奏練習'));
+    await tester.pumpAndSettle();
+    expect(find.byType(PerformanceStage), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
 

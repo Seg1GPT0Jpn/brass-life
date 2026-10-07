@@ -6,11 +6,18 @@ import '../../domain/game/engine/contest_engine.dart';
 import '../../domain/game/engine/school_calendar.dart';
 import '../../domain/game/models/game_enums.dart';
 import '../../domain/game/models/game_state.dart';
+import '../../domain/game/scene/scene_models.dart';
+import '../../domain/value_objects/instrument.dart';
 import '../common/widgets/common_widgets.dart';
 import 'game_controller.dart';
 import 'event_panels.dart';
 import 'exam_panels.dart';
 import 'instrument_decision_panel.dart';
+import 'scene/action_sheets.dart';
+import 'scene/ambient_audio.dart';
+import 'scene/diorama_view.dart';
+import 'scene/performance_stage.dart';
+import 'scene/scene_palette.dart';
 
 class HomeTab extends ConsumerWidget {
   const HomeTab({super.key});
@@ -41,8 +48,11 @@ class HomeTab extends ConsumerWidget {
       GameState(pending: PendingEvent(:final type)) => CardEventPanel(
         type: type,
       ),
-      _ => const _ActionPanel(),
+      _ => null,
     };
+    final finished = s.stage == GameStage.finished;
+    final diorama = finished ? null : const _DioramaCard();
+    final skip = finished || s.pending != null ? null : const _SkipPanel();
     final log = _LogCard(s);
     if (wide) {
       return Row(
@@ -58,7 +68,7 @@ class HomeTab extends ConsumerWidget {
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(16),
-              children: [main, log],
+              children: [?main, ?diorama, ?skip, log],
             ),
           ),
         ],
@@ -66,7 +76,7 @@ class HomeTab extends ConsumerWidget {
     }
     return ListView(
       padding: const EdgeInsets.all(12),
-      children: [main, status, log],
+      children: [?main, ?diorama, status, ?skip, log],
     );
   }
 }
@@ -131,49 +141,167 @@ class _StatusCard extends ConsumerWidget {
   }
 }
 
-class _ActionPanel extends ConsumerStatefulWidget {
-  const _ActionPanel();
+/// ホーム画面の中心: 部活の様子のジオラマ。
+///
+/// 自分・部員・場所をタップすると、そこでできる行動のメニューが開く。
+class _DioramaCard extends ConsumerStatefulWidget {
+  const _DioramaCard();
 
   @override
-  ConsumerState<_ActionPanel> createState() => _ActionPanelState();
+  ConsumerState<_DioramaCard> createState() => _DioramaCardState();
 }
 
-class _ActionPanelState extends ConsumerState<_ActionPanel> {
-  WeeklyAction _selected = WeeklyAction.individualPractice;
+class _DioramaCardState extends ConsumerState<_DioramaCard> {
+  @override
+  void initState() {
+    super.initState();
+    final scene = ref.read(clubSceneProvider);
+    if (scene != null) ref.read(ambientAudioProvider).play(scene.ambience);
+  }
+
+  Future<void> _handle(ActionChoice? choice) async {
+    switch (choice) {
+      case null:
+        return;
+      case OpenActor(:final actor):
+        if (actor.isPlayer) {
+          return _handle(await showSelfSheet(context, ref));
+        }
+        return _handle(await showMemberSheet(context, ref, actor));
+      case ChooseAction(:final action, :final targetId):
+        final before = ref.read(clubSceneProvider)!;
+        ref
+            .read(gameControllerProvider.notifier)
+            .submit(action, targetId: targetId);
+        final s = ref.read(gameControllerProvider)!;
+        final log = s.logs.lastWhere((l) => l.actionLabel != null);
+        if (!mounted) return;
+        if (action == WeeklyAction.ensemble) {
+          await showPerformanceStage(
+            context,
+            title: '合奏練習',
+            lines: log.lines,
+            performers: [
+              for (final a in before.actors)
+                if (!a.isAdvisor) a,
+            ],
+          );
+        } else {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              SnackBar(
+                duration: const Duration(seconds: 3),
+                content: Text(
+                  '${log.actionLabel}：${log.lines.isEmpty ? '' : log.lines.first}',
+                ),
+              ),
+            );
+        }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(clubSceneProvider, (_, next) {
+      if (next != null) ref.read(ambientAudioProvider).play(next.ambience);
+    });
+    final scene = ref.watch(clubSceneProvider)!;
+    final s = ref.watch(gameControllerProvider)!;
+    final ctx = ref.watch(gameContextProvider)!;
+    final theme = Theme.of(context);
+    final canAct = s.pending == null;
+    final date = ctx.calendar.dateOf(s.turn);
+    return SectionCard(
+      title: '${date.label}　${scene.season.label}・${scene.time.label}',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.graphic_eq, size: 16),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  '環境音：${scene.ambience.label}',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          DioramaView(
+            scene: scene,
+            onActorTap: canAct ? (a) => _handle(OpenActor(a)) : null,
+            onLocationTap: canAct
+                ? (l) async => _handle(
+                    await showLocationSheet(context, ref, l, scene.at(l)),
+                  )
+                : null,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            canAct
+                ? '★（自分）・部員・場所をタップして、今週どこで誰と過ごすかを選ぶ。'
+                      'ピンチで拡大できる。'
+                : 'イベントに答えると、また動けるようになる。',
+            style: theme.textTheme.bodySmall,
+          ),
+          const SizedBox(height: 4),
+          const _Legend(),
+        ],
+      ),
+    );
+  }
+}
+
+class _Legend extends StatelessWidget {
+  const _Legend();
+
+  @override
+  Widget build(BuildContext context) {
+    final style = Theme.of(context).textTheme.labelSmall;
+    Widget dot(Color c, String label) => Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 3),
+        Text(label, style: style),
+      ],
+    );
+    return Wrap(
+      spacing: 10,
+      runSpacing: 4,
+      children: [
+        for (final f in InstrumentFamily.values)
+          dot(ScenePalette.family(f), f.label),
+        dot(const Color(0xFF37474F), '顧問'),
+        dot(ScenePalette.mood(ActorMood.happy), '枠: ご機嫌'),
+        dot(ScenePalette.mood(ActorMood.tired), '枠: 疲れ'),
+        dot(ScenePalette.mood(ActorMood.angry), '枠: 怒り'),
+      ],
+    );
+  }
+}
+
+/// 月の方針でまとめて進める。
+class _SkipPanel extends ConsumerWidget {
+  const _SkipPanel();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(gameControllerProvider)!;
     final vm = ref.read(gameControllerProvider.notifier);
     final theme = Theme.of(context);
     return SectionCard(
-      title: '今週の行動',
+      title: '月の方針でまとめて進める',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final a in WeeklyAction.values)
-                ChoiceChip(
-                  label: Text(a.label),
-                  selected: _selected == a,
-                  onSelected: (_) => setState(() => _selected = a),
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(_selected.description, style: theme.textTheme.bodySmall),
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed: () => vm.submit(_selected),
-            icon: const Icon(Icons.play_arrow),
-            label: Text('「${_selected.label}」で1週間を過ごす'),
-          ),
-          const Divider(height: 32),
-          Text('月の方針でまとめて進める', style: theme.textTheme.titleSmall),
-          const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             runSpacing: 4,

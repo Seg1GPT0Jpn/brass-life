@@ -1079,7 +1079,9 @@ mixin _$NpcState {
  bool get active;/// 退部した。
  bool get quit;/// 新入生の希望楽器。
  InstrumentType? get wish;/// 3 年生の引退済み（卒業までは在籍するが部活動には参加しない）。
- bool get retired;
+ bool get retired;/// 直近の週の自律行動（NpcBehavior の名前）。ホーム画面の配置・状態に使う。
+ String? get lastBehavior;/// 直近の週の行動の相手。
+ String? get lastTargetId;
 /// Create a copy of NpcState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1093,20 +1095,20 @@ $NpcStateCopyWith<NpcState> get copyWith => _$NpcStateCopyWithImpl<NpcState>(thi
 @override
 bool operator ==(Object other) {
   final _this = this as NpcState;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NpcState&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.grade, _this.grade) || other.grade == _this.grade)&&(identical(other.instrument, _this.instrument) || other.instrument == _this.instrument)&&(identical(other.skill, _this.skill) || other.skill == _this.skill)&&(identical(other.motivation, _this.motivation) || other.motivation == _this.motivation)&&(identical(other.stress, _this.stress) || other.stress == _this.stress)&&(identical(other.lowMotivationWeeks, _this.lowMotivationWeeks) || other.lowMotivationWeeks == _this.lowMotivationWeeks)&&(identical(other.active, _this.active) || other.active == _this.active)&&(identical(other.quit, _this.quit) || other.quit == _this.quit)&&(identical(other.wish, _this.wish) || other.wish == _this.wish)&&(identical(other.retired, _this.retired) || other.retired == _this.retired));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NpcState&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.grade, _this.grade) || other.grade == _this.grade)&&(identical(other.instrument, _this.instrument) || other.instrument == _this.instrument)&&(identical(other.skill, _this.skill) || other.skill == _this.skill)&&(identical(other.motivation, _this.motivation) || other.motivation == _this.motivation)&&(identical(other.stress, _this.stress) || other.stress == _this.stress)&&(identical(other.lowMotivationWeeks, _this.lowMotivationWeeks) || other.lowMotivationWeeks == _this.lowMotivationWeeks)&&(identical(other.active, _this.active) || other.active == _this.active)&&(identical(other.quit, _this.quit) || other.quit == _this.quit)&&(identical(other.wish, _this.wish) || other.wish == _this.wish)&&(identical(other.retired, _this.retired) || other.retired == _this.retired)&&(identical(other.lastBehavior, _this.lastBehavior) || other.lastBehavior == _this.lastBehavior)&&(identical(other.lastTargetId, _this.lastTargetId) || other.lastTargetId == _this.lastTargetId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as NpcState;
-  return Object.hash(runtimeType,_this.id,_this.grade,_this.instrument,_this.skill,_this.motivation,_this.stress,_this.lowMotivationWeeks,_this.active,_this.quit,_this.wish,_this.retired);
+  return Object.hash(runtimeType,_this.id,_this.grade,_this.instrument,_this.skill,_this.motivation,_this.stress,_this.lowMotivationWeeks,_this.active,_this.quit,_this.wish,_this.retired,_this.lastBehavior,_this.lastTargetId);
 }
 
 @override
 String toString() {
   final _this = this as NpcState;
-  return 'NpcState(id: ${_this.id}, grade: ${_this.grade}, instrument: ${_this.instrument}, skill: ${_this.skill}, motivation: ${_this.motivation}, stress: ${_this.stress}, lowMotivationWeeks: ${_this.lowMotivationWeeks}, active: ${_this.active}, quit: ${_this.quit}, wish: ${_this.wish}, retired: ${_this.retired})';
+  return 'NpcState(id: ${_this.id}, grade: ${_this.grade}, instrument: ${_this.instrument}, skill: ${_this.skill}, motivation: ${_this.motivation}, stress: ${_this.stress}, lowMotivationWeeks: ${_this.lowMotivationWeeks}, active: ${_this.active}, quit: ${_this.quit}, wish: ${_this.wish}, retired: ${_this.retired}, lastBehavior: ${_this.lastBehavior}, lastTargetId: ${_this.lastTargetId})';
 }
 
 
@@ -1117,7 +1119,7 @@ abstract mixin class $NpcStateCopyWith<$Res>  {
   factory $NpcStateCopyWith(NpcState value, $Res Function(NpcState) _then) = _$NpcStateCopyWithImpl;
 @useResult
 $Res call({
- String id, int grade, InstrumentType? instrument, int skill, int motivation, int stress, int lowMotivationWeeks, bool active, bool quit, InstrumentType? wish, bool retired
+ String id, int grade, InstrumentType? instrument, int skill, int motivation, int stress, int lowMotivationWeeks, bool active, bool quit, InstrumentType? wish, bool retired, String? lastBehavior, String? lastTargetId
 });
 
 
@@ -1134,7 +1136,7 @@ class _$NpcStateCopyWithImpl<$Res>
 
 /// Create a copy of NpcState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? grade = null,Object? instrument = freezed,Object? skill = null,Object? motivation = null,Object? stress = null,Object? lowMotivationWeeks = null,Object? active = null,Object? quit = null,Object? wish = freezed,Object? retired = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? grade = null,Object? instrument = freezed,Object? skill = null,Object? motivation = null,Object? stress = null,Object? lowMotivationWeeks = null,Object? active = null,Object? quit = null,Object? wish = freezed,Object? retired = null,Object? lastBehavior = freezed,Object? lastTargetId = freezed,}) {
   return _then(NpcState(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,grade: null == grade ? _self.grade : grade // ignore: cast_nullable_to_non_nullable
@@ -1147,7 +1149,9 @@ as int,active: null == active ? _self.active : active // ignore: cast_nullable_t
 as bool,quit: null == quit ? _self.quit : quit // ignore: cast_nullable_to_non_nullable
 as bool,wish: freezed == wish ? _self.wish : wish // ignore: cast_nullable_to_non_nullable
 as InstrumentType?,retired: null == retired ? _self.retired : retired // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,lastBehavior: freezed == lastBehavior ? _self.lastBehavior : lastBehavior // ignore: cast_nullable_to_non_nullable
+as String?,lastTargetId: freezed == lastTargetId ? _self.lastTargetId : lastTargetId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -1232,10 +1236,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  int grade,  InstrumentType? instrument,  int skill,  int motivation,  int stress,  int lowMotivationWeeks,  bool active,  bool quit,  InstrumentType? wish,  bool retired)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  int grade,  InstrumentType? instrument,  int skill,  int motivation,  int stress,  int lowMotivationWeeks,  bool active,  bool quit,  InstrumentType? wish,  bool retired,  String? lastBehavior,  String? lastTargetId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _NpcState() when $default != null:
-return $default(_that.id,_that.grade,_that.instrument,_that.skill,_that.motivation,_that.stress,_that.lowMotivationWeeks,_that.active,_that.quit,_that.wish,_that.retired);case _:
+return $default(_that.id,_that.grade,_that.instrument,_that.skill,_that.motivation,_that.stress,_that.lowMotivationWeeks,_that.active,_that.quit,_that.wish,_that.retired,_that.lastBehavior,_that.lastTargetId);case _:
   return orElse();
 
 }
@@ -1253,10 +1257,10 @@ return $default(_that.id,_that.grade,_that.instrument,_that.skill,_that.motivati
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  int grade,  InstrumentType? instrument,  int skill,  int motivation,  int stress,  int lowMotivationWeeks,  bool active,  bool quit,  InstrumentType? wish,  bool retired)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  int grade,  InstrumentType? instrument,  int skill,  int motivation,  int stress,  int lowMotivationWeeks,  bool active,  bool quit,  InstrumentType? wish,  bool retired,  String? lastBehavior,  String? lastTargetId)  $default,) {final _that = this;
 switch (_that) {
 case _NpcState():
-return $default(_that.id,_that.grade,_that.instrument,_that.skill,_that.motivation,_that.stress,_that.lowMotivationWeeks,_that.active,_that.quit,_that.wish,_that.retired);case _:
+return $default(_that.id,_that.grade,_that.instrument,_that.skill,_that.motivation,_that.stress,_that.lowMotivationWeeks,_that.active,_that.quit,_that.wish,_that.retired,_that.lastBehavior,_that.lastTargetId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1273,10 +1277,10 @@ return $default(_that.id,_that.grade,_that.instrument,_that.skill,_that.motivati
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  int grade,  InstrumentType? instrument,  int skill,  int motivation,  int stress,  int lowMotivationWeeks,  bool active,  bool quit,  InstrumentType? wish,  bool retired)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  int grade,  InstrumentType? instrument,  int skill,  int motivation,  int stress,  int lowMotivationWeeks,  bool active,  bool quit,  InstrumentType? wish,  bool retired,  String? lastBehavior,  String? lastTargetId)?  $default,) {final _that = this;
 switch (_that) {
 case _NpcState() when $default != null:
-return $default(_that.id,_that.grade,_that.instrument,_that.skill,_that.motivation,_that.stress,_that.lowMotivationWeeks,_that.active,_that.quit,_that.wish,_that.retired);case _:
+return $default(_that.id,_that.grade,_that.instrument,_that.skill,_that.motivation,_that.stress,_that.lowMotivationWeeks,_that.active,_that.quit,_that.wish,_that.retired,_that.lastBehavior,_that.lastTargetId);case _:
   return null;
 
 }
@@ -1288,7 +1292,7 @@ return $default(_that.id,_that.grade,_that.instrument,_that.skill,_that.motivati
 @JsonSerializable()
 
 class _NpcState implements NpcState {
-  const _NpcState({required this.id, required this.grade, this.instrument, this.skill = 0, this.motivation = 60, this.stress = 20, this.lowMotivationWeeks = 0, this.active = true, this.quit = false, this.wish, this.retired = false});
+  const _NpcState({required this.id, required this.grade, this.instrument, this.skill = 0, this.motivation = 60, this.stress = 20, this.lowMotivationWeeks = 0, this.active = true, this.quit = false, this.wish, this.retired = false, this.lastBehavior, this.lastTargetId});
   factory _NpcState.fromJson(Map<String, dynamic> json) => _$NpcStateFromJson(json);
 
 @override final  String id;
@@ -1307,6 +1311,10 @@ class _NpcState implements NpcState {
 @override final  InstrumentType? wish;
 /// 3 年生の引退済み（卒業までは在籍するが部活動には参加しない）。
 @override@JsonKey() final  bool retired;
+/// 直近の週の自律行動（NpcBehavior の名前）。ホーム画面の配置・状態に使う。
+@override final  String? lastBehavior;
+/// 直近の週の行動の相手。
+@override final  String? lastTargetId;
 
 /// Create a copy of NpcState
 /// with the given fields replaced by the non-null parameter values.
@@ -1321,18 +1329,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NpcState&&(identical(other.id, id) || other.id == id)&&(identical(other.grade, grade) || other.grade == grade)&&(identical(other.instrument, instrument) || other.instrument == instrument)&&(identical(other.skill, skill) || other.skill == skill)&&(identical(other.motivation, motivation) || other.motivation == motivation)&&(identical(other.stress, stress) || other.stress == stress)&&(identical(other.lowMotivationWeeks, lowMotivationWeeks) || other.lowMotivationWeeks == lowMotivationWeeks)&&(identical(other.active, active) || other.active == active)&&(identical(other.quit, quit) || other.quit == quit)&&(identical(other.wish, wish) || other.wish == wish)&&(identical(other.retired, retired) || other.retired == retired));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NpcState&&(identical(other.id, id) || other.id == id)&&(identical(other.grade, grade) || other.grade == grade)&&(identical(other.instrument, instrument) || other.instrument == instrument)&&(identical(other.skill, skill) || other.skill == skill)&&(identical(other.motivation, motivation) || other.motivation == motivation)&&(identical(other.stress, stress) || other.stress == stress)&&(identical(other.lowMotivationWeeks, lowMotivationWeeks) || other.lowMotivationWeeks == lowMotivationWeeks)&&(identical(other.active, active) || other.active == active)&&(identical(other.quit, quit) || other.quit == quit)&&(identical(other.wish, wish) || other.wish == wish)&&(identical(other.retired, retired) || other.retired == retired)&&(identical(other.lastBehavior, lastBehavior) || other.lastBehavior == lastBehavior)&&(identical(other.lastTargetId, lastTargetId) || other.lastTargetId == lastTargetId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,grade,instrument,skill,motivation,stress,lowMotivationWeeks,active,quit,wish,retired);
+    return Object.hash(runtimeType,id,grade,instrument,skill,motivation,stress,lowMotivationWeeks,active,quit,wish,retired,lastBehavior,lastTargetId);
 }
 
 @override
 String toString() {
-    return 'NpcState(id: $id, grade: $grade, instrument: $instrument, skill: $skill, motivation: $motivation, stress: $stress, lowMotivationWeeks: $lowMotivationWeeks, active: $active, quit: $quit, wish: $wish, retired: $retired)';
+    return 'NpcState(id: $id, grade: $grade, instrument: $instrument, skill: $skill, motivation: $motivation, stress: $stress, lowMotivationWeeks: $lowMotivationWeeks, active: $active, quit: $quit, wish: $wish, retired: $retired, lastBehavior: $lastBehavior, lastTargetId: $lastTargetId)';
 }
 
 
@@ -1343,7 +1351,7 @@ abstract mixin class _$NpcStateCopyWith<$Res> implements $NpcStateCopyWith<$Res>
   factory _$NpcStateCopyWith(_NpcState value, $Res Function(_NpcState) _then) = __$NpcStateCopyWithImpl;
 @override @useResult
 $Res call({
- String id, int grade, InstrumentType? instrument, int skill, int motivation, int stress, int lowMotivationWeeks, bool active, bool quit, InstrumentType? wish, bool retired
+ String id, int grade, InstrumentType? instrument, int skill, int motivation, int stress, int lowMotivationWeeks, bool active, bool quit, InstrumentType? wish, bool retired, String? lastBehavior, String? lastTargetId
 });
 
 
@@ -1360,7 +1368,7 @@ class __$NpcStateCopyWithImpl<$Res>
 
 /// Create a copy of NpcState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? grade = null,Object? instrument = freezed,Object? skill = null,Object? motivation = null,Object? stress = null,Object? lowMotivationWeeks = null,Object? active = null,Object? quit = null,Object? wish = freezed,Object? retired = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? grade = null,Object? instrument = freezed,Object? skill = null,Object? motivation = null,Object? stress = null,Object? lowMotivationWeeks = null,Object? active = null,Object? quit = null,Object? wish = freezed,Object? retired = null,Object? lastBehavior = freezed,Object? lastTargetId = freezed,}) {
   return _then(_NpcState(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,grade: null == grade ? _self.grade : grade // ignore: cast_nullable_to_non_nullable
@@ -1373,7 +1381,9 @@ as int,active: null == active ? _self.active : active // ignore: cast_nullable_t
 as bool,quit: null == quit ? _self.quit : quit // ignore: cast_nullable_to_non_nullable
 as bool,wish: freezed == wish ? _self.wish : wish // ignore: cast_nullable_to_non_nullable
 as InstrumentType?,retired: null == retired ? _self.retired : retired // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,lastBehavior: freezed == lastBehavior ? _self.lastBehavior : lastBehavior // ignore: cast_nullable_to_non_nullable
+as String?,lastTargetId: freezed == lastTargetId ? _self.lastTargetId : lastTargetId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

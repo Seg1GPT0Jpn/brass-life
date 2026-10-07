@@ -207,6 +207,12 @@ abstract class NpcState with _$NpcState {
 
     /// 3 年生の引退済み（卒業までは在籍するが部活動には参加しない）。
     @Default(false) bool retired,
+
+    /// 直近の週の自律行動（NpcBehavior の名前）。ホーム画面の配置・状態に使う。
+    String? lastBehavior,
+
+    /// 直近の週の行動の相手。
+    String? lastTargetId,
   }) = _NpcState;
 
   factory NpcState.fromJson(Map<String, dynamic> json) =>

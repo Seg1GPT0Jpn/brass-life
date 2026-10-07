@@ -56,10 +56,7 @@ void main() {
       for (var i = 0; i < 20; i++) {
         s = s.pending != null
             ? tm.autoResolve(s)
-            : tm.submitAction(
-                s,
-                WeeklyAction.values[i % WeeklyAction.values.length],
-              );
+            : tm.submitAction(s, WeeklyAction.values[i % 7]);
       }
       return s;
     }

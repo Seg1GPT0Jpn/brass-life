@@ -9,6 +9,8 @@ import '../../domain/game/models/game_enums.dart';
 import '../../domain/game/models/game_state.dart';
 import '../../domain/game/models/player_setup.dart';
 import '../../domain/game/models/save_summary.dart';
+import '../../domain/game/scene/club_scene_service.dart';
+import '../../domain/game/scene/scene_models.dart';
 import '../../domain/repositories/game_save_repository.dart';
 import '../../domain/services/world_generation/world_generator.dart';
 import '../../domain/value_objects/instrument.dart';
@@ -41,7 +43,9 @@ class GameController extends Notifier<GameState?> {
   void newGame({PlayerSetup? setup}) =>
       _commit(_tm.newGame(_ctx.world, setup: setup));
 
-  void submit(WeeklyAction action) => _commit(_tm.submitAction(state!, action));
+  /// 今週の行動を確定する。[targetId] は相手の部員（「一緒に練習」等）。
+  void submit(WeeklyAction action, {String? targetId}) =>
+      _commit(_tm.submitAction(state!, action, targetId: targetId));
 
   /// 楽器の希望を提出し、経緯の説明を返す。
   List<String> resolveInstrument(List<InstrumentType> wishes) {
@@ -148,6 +152,14 @@ class GameController extends Notifier<GameState?> {
 final gameControllerProvider = NotifierProvider<GameController, GameState?>(
   GameController.new,
 );
+
+/// ホーム画面のジオラマ（誰がどこで何をしているか）。
+final clubSceneProvider = Provider<ClubScene?>((ref) {
+  final ctx = ref.watch(gameContextProvider);
+  final s = ref.watch(gameControllerProvider);
+  if (ctx == null || s == null) return null;
+  return ClubSceneService(ctx).compose(s);
+});
 
 final saveListProvider = FutureProvider<List<SaveSummary>>(
   (ref) => ref.watch(gameSaveRepositoryProvider).list(),

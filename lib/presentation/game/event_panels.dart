@@ -10,6 +10,7 @@ import '../../domain/game/models/game_enums.dart';
 import '../../domain/value_objects/school_enums.dart';
 import '../common/widgets/common_widgets.dart';
 import 'game_controller.dart';
+import 'scene/performance_stage.dart';
 
 /// イベント結果のダイアログ。
 Future<void> showResultDialog(
@@ -81,13 +82,27 @@ class _CardEventPanelState extends ConsumerState<CardEventPanel> {
     Future<void> submit() async {
       final card = _selected!;
       final vm = ref.read(gameControllerProvider.notifier);
+      // 演奏者（本番前の状態で決める）: コンクールは出場メンバー、それ以外は全員。
+      final scene = ref.read(clubSceneProvider)!;
+      final performers = [
+        for (final a in scene.actors)
+          if (!a.isAdvisor &&
+              (widget.type != PendingEventType.contest ||
+                  s.contestMembers.contains(a.id)))
+            a,
+      ];
       final lines = switch (widget.type) {
         PendingEventType.audition => vm.resolveAudition(card),
         PendingEventType.contest => vm.resolveContest(card),
         _ => vm.resolveConcert(card),
       };
       if (!context.mounted) return;
-      await showResultDialog(context, title.replaceFirst('イベント：', ''), lines);
+      await showPerformanceStage(
+        context,
+        title: title.replaceFirst('イベント：', ''),
+        lines: lines,
+        performers: performers,
+      );
     }
 
     return SectionCard(

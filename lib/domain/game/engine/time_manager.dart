@@ -16,6 +16,7 @@ import 'player_setup_service.dart';
 import 'relations.dart';
 import 'game_context.dart';
 import 'instrument_decision.dart';
+import 'interaction_rules.dart';
 import 'memory_writer.dart';
 import 'drama_engine.dart';
 import 'entrance_exam_engine.dart';
@@ -110,17 +111,28 @@ class TimeManager {
   }
 
   /// 通常週の行動を実行し、次の週へ進める。
-  GameState submitAction(GameState s, WeeklyAction action) {
+  ///
+  /// 相手を指定する行動（[WeeklyAction.needsTarget]）では [targetId] に部員の ID を渡す。
+  /// 選べない組み合わせ（自分より下手な相手に教わる等）は [ArgumentError]。
+  GameState submitAction(GameState s, WeeklyAction action, {String? targetId}) {
     if (s.pending != null) {
       throw StateError('入力待ちのイベントがあります: ${s.pending!.type}');
     }
     if (s.stage == GameStage.finished) return s;
-    final r = ActionEngine(ctx).resolve(s, action);
+    final reason = InteractionRules(ctx).unavailableReason(s, action, targetId);
+    if (reason != null) throw ArgumentError(reason);
+    final r = ActionEngine(ctx).resolve(s, action, targetId: targetId);
     var next = r.state.copyWith(
-      choices: [...r.state.choices, '${s.turn}:${action.name}'],
+      choices: [
+        ...r.state.choices,
+        '${s.turn}:${ActionEngine.choiceKey(action, targetId)}',
+      ],
     );
-    final drama = DramaEngine(ctx).weekly(next, action);
-    next = _log(drama.state, action.label, [...r.lines, ...drama.lines]);
+    final drama = DramaEngine(ctx).weekly(next, action, targetId: targetId);
+    final label = targetId == null
+        ? action.label
+        : '${action.label}（${ctx.npc(s, targetId).fullName}）';
+    next = _log(drama.state, label, [...r.lines, ...drama.lines]);
     return _advance(next);
   }
 

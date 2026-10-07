@@ -20,6 +20,11 @@ class ActionEngine {
     WeeklyAction.partPractice => 4,
     WeeklyAction.basics => 2,
     WeeklyAction.extraPractice => 8,
+    WeeklyAction.ensemble => 3,
+    WeeklyAction.maintenance => 1,
+    WeeklyAction.practiceWith => 5,
+    WeeklyAction.learnFrom => 4,
+    WeeklyAction.teach => 2,
     _ => 0,
   };
 
@@ -28,6 +33,11 @@ class ActionEngine {
     WeeklyAction.partPractice => 3,
     WeeklyAction.individualPractice => 2,
     WeeklyAction.extraPractice => 3,
+    WeeklyAction.ensemble => 6,
+    WeeklyAction.teach => 5,
+    WeeklyAction.maintenance => 2,
+    WeeklyAction.practiceWith => 3,
+    WeeklyAction.learnFrom => 3,
     _ => 1,
   };
 
@@ -39,6 +49,13 @@ class ActionEngine {
     WeeklyAction.study => 4,
     WeeklyAction.hangOut => -6,
     WeeklyAction.rest => -25,
+    WeeklyAction.ensemble => 3,
+    WeeklyAction.maintenance => 0,
+    WeeklyAction.breather => -12,
+    WeeklyAction.practiceWith => 3,
+    WeeklyAction.learnFrom => 2,
+    WeeklyAction.teach => 2,
+    WeeklyAction.chat => -3,
   };
 
   static int _stressDelta(WeeklyAction a) => switch (a) {
@@ -49,17 +66,35 @@ class ActionEngine {
     WeeklyAction.study => 4,
     WeeklyAction.hangOut => -16,
     WeeklyAction.rest => -10,
+    WeeklyAction.ensemble => 1,
+    WeeklyAction.maintenance => -3,
+    WeeklyAction.breather => -8,
+    WeeklyAction.practiceWith => 0,
+    WeeklyAction.learnFrom => 1,
+    WeeklyAction.teach => 2,
+    WeeklyAction.chat => -10,
   };
 
+  /// 乱数の選択キー。相手を指定する行動は相手ごとに結果が変わる。
+  static String choiceKey(WeeklyAction action, String? targetId) =>
+      targetId == null ? action.name : '${action.name}:$targetId';
+
+  /// [targetId] は相手を指定する行動（一緒に練習・教わる・指導する・雑談）の相手。
   ({GameState state, List<String> lines}) resolve(
     GameState s,
-    WeeklyAction action,
-  ) {
+    WeeklyAction action, {
+    String? targetId,
+  }) {
     final rng = ctx.sim.stream(
       turn: s.turn,
       domain: 'player_action',
-      choice: action.name,
+      choice: choiceKey(action, targetId),
     );
+    // 教わる: 相手が上手いほど伸びる（最大 +8）。
+    final targetSkill = targetId == null ? null : s.npcs[targetId]?.skill;
+    final learnBonus = action == WeeklyAction.learnFrom && targetSkill != null
+        ? ((targetSkill - s.player.skill) ~/ 40).clamp(0, 8)
+        : 0;
     final club = ctx.club(s);
     final teaching = ctx.advisor(s).advisorProfile!.teachingSkill;
     var p = s.player;
@@ -103,7 +138,9 @@ class ActionEngine {
             (p.aptitude.fitFor(p.instrument!) + (p.hasTrait('genius') ? 15 : 0))
                 .clamp(0, 115);
         final base =
-            _baseSkill(action) + (inClub ? 1 + club.practiceIntensity ~/ 2 : 0);
+            _baseSkill(action) +
+            learnBonus +
+            (inClub ? 1 + club.practiceIntensity ~/ 2 : 0);
         // 各係数は % 表記なので 100^5 で割る（中間値は 2^53 未満に収まる）。
         var gain =
             base *
@@ -132,7 +169,10 @@ class ActionEngine {
         if (gain > 0) {
           lines.add('${p.instrument!.label}の熟練度 +$gain（${p.skill}）');
         }
-        if (musGain > 0 && action == WeeklyAction.basics) {
+        if (musGain > 0 &&
+            (action == WeeklyAction.basics ||
+                action == WeeklyAction.ensemble ||
+                action == WeeklyAction.teach)) {
           lines.add('音楽性 +$musGain（${p.musicality}）');
         }
       }
@@ -174,15 +214,23 @@ class ActionEngine {
       if (stress > 70) motivation -= 3;
       if (fatigue > 85) motivation -= 3;
       if (action == WeeklyAction.rest) motivation -= 1;
+      if (action == WeeklyAction.maintenance || action == WeeklyAction.chat) {
+        motivation += 1;
+      }
       final social =
           p.social +
           (action == WeeklyAction.hangOut ? 3 : 0) +
-          (action == WeeklyAction.partPractice ? 1 : 0);
+          (action == WeeklyAction.chat ? 2 : 0) +
+          (action == WeeklyAction.partPractice ||
+                  action == WeeklyAction.practiceWith
+              ? 1
+              : 0);
       final trust =
           p.advisorTrust +
           switch (action) {
             WeeklyAction.extraPractice => 2,
             WeeklyAction.rest => -3,
+            WeeklyAction.breather => -1,
             _ when action.isPractice => 1,
             _ => 0,
           } +

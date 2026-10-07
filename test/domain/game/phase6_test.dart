@@ -14,7 +14,7 @@ import 'package:brass_life/domain/services/world_generation/world_generator.dart
 import 'package:flutter_test/flutter_test.dart';
 
 /// 6 年間プレイ後の状態のハッシュ（回帰検知・VM と Web の一致確認用）。
-const goldenLife = 'c0a28e89';
+const goldenLife = 'e7912a90';
 
 void main() {
   late World world;

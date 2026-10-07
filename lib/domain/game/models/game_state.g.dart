@@ -274,6 +274,8 @@ _NpcState _$NpcStateFromJson(Map<String, dynamic> json) => _NpcState(
   quit: json['quit'] as bool? ?? false,
   wish: $enumDecodeNullable(_$InstrumentTypeEnumMap, json['wish']),
   retired: json['retired'] as bool? ?? false,
+  lastBehavior: json['lastBehavior'] as String?,
+  lastTargetId: json['lastTargetId'] as String?,
 );
 
 Map<String, dynamic> _$NpcStateToJson(_NpcState instance) => <String, dynamic>{
@@ -288,6 +290,8 @@ Map<String, dynamic> _$NpcStateToJson(_NpcState instance) => <String, dynamic>{
   'quit': instance.quit,
   'wish': ?_$InstrumentTypeEnumMap[instance.wish],
   'retired': instance.retired,
+  'lastBehavior': ?instance.lastBehavior,
+  'lastTargetId': ?instance.lastTargetId,
 };
 
 _ExamRecord _$ExamRecordFromJson(Map<String, dynamic> json) => _ExamRecord(

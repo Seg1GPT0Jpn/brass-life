@@ -40,6 +40,11 @@ const Map<String, String> memoryTemplates = {
   'reunited': '{school}で{target}と再会した',
   'graduated_high': '{school}を卒業した',
   'recommended_univ': '{school}への推薦を受けた',
+  'practiced_with': '{actor}は{target}と並んで練習した',
+  'player_learned_from': '{actor}は{target}にコツを教わった',
+  'player_taught': '{actor}は{target}を指導した',
+  'taught_senior_resented': '{actor}は先輩の{target}を指導したが、反感を買った',
+  'player_chatted': '{actor}は{target}と雑談した',
 };
 
 String renderMemory(String reasonKey, Map<String, String> params) {

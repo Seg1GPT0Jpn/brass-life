@@ -48,8 +48,9 @@ class DramaEngine {
 
   ({GameState state, List<String> lines}) weekly(
     GameState s,
-    WeeklyAction? playerAction,
-  ) {
+    WeeklyAction? playerAction, {
+    String? targetId,
+  }) {
     final relations = Map.of(s.relations);
     final npcs = Map.of(s.npcs);
     var player = s.player;
@@ -115,10 +116,127 @@ class DramaEngine {
       final rng = ctx.sim.stream(
         turn: s.turn,
         domain: 'player_social',
-        choice: playerAction.name,
+        choice: targetId == null
+            ? playerAction.name
+            : '${playerAction.name}:$targetId',
       );
       final all = members().where((m) => !m.isPlayer).toList();
+      final target = targetId == null ? null : npcs[targetId];
+      final targetNpc = targetId == null ? null : ctx.npc(s, targetId);
       switch (playerAction) {
+        // ── 相手を指定する行動 ──
+        case WeeklyAction.practiceWith when target != null:
+          final d = RelationshipVector(affection: 3, trust: rng.range(3, 6));
+          Relations.addMutual(relations, Relations.player, targetId!, d);
+          final gain = rng.range(3, 6);
+          npcs[targetId] = target.copyWith(
+            skill: (target.skill + gain).clamp(0, 1000),
+          );
+          if (target.instrument != null &&
+              target.instrument == player.instrument) {
+            Relations.addMutual(
+              relations,
+              Relations.player,
+              targetId,
+              const RelationshipVector(rivalry: 1),
+            );
+          }
+          record(
+            actor: Relations.player,
+            target: targetId,
+            key: 'practiced_with',
+            importance: 12,
+            delta: d,
+            category: MemoryCategory.practice,
+          );
+          playerLines.add('${name(targetId)}と並んで練習した。息が合ってきた。');
+        case WeeklyAction.learnFrom when target != null:
+          const toTeacher = RelationshipVector(trust: 5, affection: 1);
+          Relations.add(relations, Relations.player, targetId!, toTeacher);
+          Relations.add(
+            relations,
+            targetId,
+            Relations.player,
+            const RelationshipVector(affection: 2, trust: 1),
+          );
+          npcs[targetId] = target.copyWith(
+            motivation: (target.motivation + 1).clamp(0, 100),
+          );
+          record(
+            actor: Relations.player,
+            target: targetId,
+            key: 'player_learned_from',
+            importance: 14,
+            delta: toTeacher,
+            category: MemoryCategory.practice,
+          );
+          playerLines.add('${name(targetId)}にコツを教わった。');
+        case WeeklyAction.teach when target != null:
+          final gain =
+              (4 + (player.skill - target.skill) ~/ 60 + rng.range(0, 3)).clamp(
+                2,
+                12,
+              );
+          npcs[targetId!] = target.copyWith(
+            skill: (target.skill + gain).clamp(0, 1000),
+          );
+          // 先輩を指導すると、相手によっては反感を買う。
+          final senior = target.grade > player.grade;
+          final proud =
+              targetNpc!.hasTrait('rebellious') ||
+              targetNpc.hasTrait('cynical') ||
+              targetNpc.hasTrait('perfectionist');
+          final d = senior && proud
+              ? const RelationshipVector(affection: -4, trust: 2, rivalry: 4)
+              : const RelationshipVector(affection: 2, trust: 5);
+          Relations.add(relations, targetId, Relations.player, d);
+          record(
+            actor: Relations.player,
+            target: targetId,
+            key: senior && proud ? 'taught_senior_resented' : 'player_taught',
+            importance: senior && proud ? 25 : 14,
+            delta: d,
+            category: MemoryCategory.practice,
+          );
+          playerLines.add(
+            senior && proud
+                ? '${name(targetId)}先輩を指導したが、プライドを傷つけてしまったようだ……。'
+                : '${name(targetId)}を指導した（熟練度 +$gain）。感謝された。',
+          );
+        case WeeklyAction.chat when target != null:
+          final d = RelationshipVector(affection: rng.range(4, 7), trust: 1);
+          Relations.addMutual(relations, Relations.player, targetId!, d);
+          npcs[targetId] = target.copyWith(
+            stress: (target.stress - 4).clamp(0, 100),
+          );
+          record(
+            actor: Relations.player,
+            target: targetId,
+            key: 'player_chatted',
+            importance: 10,
+            delta: d,
+          );
+          playerLines.add('${name(targetId)}と雑談した。少し仲良くなった。');
+          if (targetNpc!.hasTrait('gossip')) {
+            final rumor = _recentNegative(s, mem.written, targetId);
+            if (rumor != null && rumor.subjectId != Relations.player) {
+              playerLines.add(
+                '${name(targetId)}から、${name(rumor.subjectId)}についての噂を聞いた。',
+              );
+            }
+          }
+        case WeeklyAction.ensemble:
+          // 全体合奏: 部員全員との信頼が少しずつ深まる。
+          for (final m in all) {
+            if (m.instrument == null) continue;
+            Relations.add(
+              relations,
+              m.id,
+              Relations.player,
+              const RelationshipVector(trust: 1),
+            );
+          }
+          playerLines.add('合奏で部全体の音がまとまってきた。');
         case WeeklyAction.partPractice when player.instrument != null:
           final part = all
               .where((m) => m.instrument == player.instrument)
@@ -231,10 +349,13 @@ class DramaEngine {
       var motivationDelta = 0;
       var stressDelta = 0;
 
+      String? lastTarget;
       _Member? pickTarget(int Function(_Member m) weight) {
         final ws = [for (final m in everyone) weight(m).clamp(0, 100000)];
         if (ws.every((w) => w <= 0)) return null;
-        return everyone[rng.weightedIndex(ws)];
+        final picked = everyone[rng.weightedIndex(ws)];
+        lastTarget = picked.id;
+        return picked;
       }
 
       int proximity(_Member m) =>
@@ -548,10 +669,17 @@ class DramaEngine {
       motivation = motivation.clamp(0, 100);
       stress = stress.clamp(0, 100);
       final low = motivation < 25 ? latest.lowMotivationWeeks + 1 : 0;
+      // 今週の行動と相手を記録する（ホーム画面の配置・状態表示に使う）。
+      // 相手が見つからなかった行動は「特になし」として扱う。
+      final acted = behavior.needsTarget && lastTarget == null
+          ? NpcBehavior.idle
+          : behavior;
       npcs[id] = current.copyWith(
         motivation: motivation,
         stress: stress,
         lowMotivationWeeks: low,
+        lastBehavior: acted.name,
+        lastTargetId: acted.needsTarget ? lastTarget : null,
       );
     }
 
