@@ -6,6 +6,7 @@ import 'game_controller.dart';
 import 'home_tab.dart';
 import 'members_tab.dart';
 import 'records_tab.dart';
+import 'save_dialog.dart';
 import 'relations_tab.dart';
 
 /// ゲーム本編の画面（ホーム / 部員 / 記録）。
@@ -33,6 +34,14 @@ class GamePage extends ConsumerWidget {
         appBar: AppBar(
           title: Text(date.labelWithStage),
           actions: [
+            IconButton(
+              tooltip: 'セーブ',
+              icon: const Icon(Icons.save_outlined),
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (_) => const SaveDialog(),
+              ),
+            ),
             IconButton(
               tooltip: '世界のデバッグ表示',
               icon: const Icon(Icons.bug_report_outlined),

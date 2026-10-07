@@ -2,6 +2,7 @@
 
 // 開発用: 複数 Seed で中学〜高校を自動プレイし、受験・進学の結果を表示する。
 import 'package:brass_life/core/rng/seed_code.dart';
+import 'package:brass_life/domain/game/engine/ending_analyzer.dart';
 import 'package:brass_life/domain/game/engine/game_context.dart';
 import 'package:brass_life/domain/game/engine/time_manager.dart';
 import 'package:brass_life/domain/game/models/game_enums.dart';
@@ -16,8 +17,19 @@ void main(List<String> args) {
     final tm = TimeManager(ctx);
     var s = tm.newGame(world);
     final sw = Stopwatch()..start();
-    for (final policy in [MonthlyPolicy.studyFocus, MonthlyPolicy.balanced]) {
-      s = tm.autoPlayMonths(s, 36, policy);
+    for (final policy in [MonthlyPolicy.studyFocus, MonthlyPolicy.practiceFocus]) {
+      s = tm.autoPlayMonths(s, 37, policy);
+    }
+    while (s.pending != null) {
+      s = tm.autoResolve(s);
+    }
+    final ending = EndingAnalyzer(ctx).analyze(s);
+    print('  称号: ${ending.title}（${ending.titleReason}） 次点: ${ending.otherTitles}');
+    for (final p in ending.epilogue) {
+      print('  > $p');
+    }
+    for (final h in ending.highlights) {
+      print('  * $h');
     }
     print('[$seed] stage=${s.stage.label} turn=${s.turn} ${sw.elapsedMilliseconds}ms schools=${s.schoolHistory.map((id) => ctx.index.schoolById[id]!.name)} now=${ctx.school(s).name}');
     print('  academic=${s.player.academic} skill=${s.player.skill} inst=${s.player.instrument?.label} prev=${s.player.previousInstrument?.label}');

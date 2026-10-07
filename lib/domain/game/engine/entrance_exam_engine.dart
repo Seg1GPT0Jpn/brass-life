@@ -1,6 +1,7 @@
 import '../../entities/memory_tag.dart';
 import '../../value_objects/school_enums.dart';
 import '../models/game_enums.dart';
+import 'university_catalog.dart';
 import '../models/game_state.dart';
 import 'game_context.dart';
 import 'memory_writer.dart';
@@ -65,13 +66,21 @@ class EntranceExamEngine {
     return list;
   }
 
-  /// 内申点（1.0〜5.0 を 10 倍した整数。中 3 の評定を 2 倍で重み付け）。
-  static int naishin10(PlayerState p) {
+  /// 大学の受験先候補（偏差値の高い順）。
+  List<ExamTarget> universities() => UniversityCatalog.generate(
+    ctx.world.seed,
+    ctx.world.region.prefectureName,
+  );
+
+  /// 内申点（1.0〜5.0 を 10 倍した整数。最終学年の評定を 2 倍で重み付け）。
+  /// [high] が true なら高校の評定（評定平均）、false なら中学の評定。
+  static int naishin10(PlayerState p, {bool high = false}) {
     var sum = 0;
     var weight = 0;
+    final (from, to) = high ? (3, 5) : (0, 2);
     for (final g in p.termGrades) {
-      if (g.academicYearIndex > 2) continue;
-      final w = g.academicYearIndex == 2 ? 2 : 1;
+      if (g.academicYearIndex < from || g.academicYearIndex > to) continue;
+      final w = g.academicYearIndex == to ? 2 : 1;
       sum += g.grade * w * 10;
       weight += w;
     }
@@ -91,18 +100,30 @@ class EntranceExamEngine {
   }
 
   /// 受験の実力（0〜100 前後）。
-  int strength(GameState s) {
-    final academic = s.player.academic ~/ 10;
-    final naishin = (naishin10(s.player) - 10) * 100 ~/ 40;
+  /// - 高校: 学力×0.7 + 内申×0.3 + 部活実績
+  /// - 大学: 学力×0.85 + 評定平均×0.15 + 部活実績/2
+  /// - 音楽大学: 実技（熟練度×0.7 + 音楽性×0.3）+ 部活実績
+  int strength(GameState s, [ExamTarget? target]) {
+    final p = s.player;
+    final academic = p.academic ~/ 10;
+    if (target != null && target.isMusic) {
+      return p.skill * 7 ~/ 100 + p.musicality * 3 ~/ 100 + clubBonus(s);
+    }
+    if (s.stage == GameStage.high) {
+      final naishin = (naishin10(p, high: true) - 10) * 100 ~/ 40;
+      return academic * 85 ~/ 100 + naishin * 15 ~/ 100 + clubBonus(s) ~/ 2;
+    }
+    final naishin = (naishin10(p) - 10) * 100 ~/ 40;
     return academic * 7 ~/ 10 + naishin * 3 ~/ 10 + clubBonus(s);
   }
 
-  static int required(ExamTarget t) =>
-      20 + (t.deviation - 35) * 16 ~/ 10 - (t.isPrivate ? 4 : 0);
+  static int required(ExamTarget t) => t.isMusic
+      ? 25 + (t.deviation - 35) * 14 ~/ 10
+      : 20 + (t.deviation - 35) * 16 ~/ 10 - (t.isPrivate ? 4 : 0);
 
   /// 合格可能性の判定（A〜E）。
   String estimate(GameState s, ExamTarget t) {
-    final d = strength(s) - required(t);
+    final d = strength(s, t) - required(t);
     return d >= 8
         ? 'A'
         : (d >= 3 ? 'B' : (d >= -2 ? 'C' : (d >= -7 ? 'D' : 'E')));
@@ -145,13 +166,12 @@ class EntranceExamEngine {
     final results = Map.of(exam.results);
     final lines = <String>[];
     final mem = MemoryWriter(ctx, s);
-    final power = strength(s);
     for (final id in exam.applications) {
       final t = targets[id]!;
       if (t.isPrivate != privateOnly || results.containsKey(id)) continue;
       final rng = ctx.sim.stream(turn: s.turn, domain: 'exam', actor: id);
       final score =
-          power +
+          strength(s, t) +
           rng.normalInt(mean: 0, sd: 5, min: -15, max: 15) -
           (s.player.hasTrait('stage_fright') ? 2 : 0);
       final pass = score >= required(t);
@@ -190,6 +210,13 @@ class EntranceExamEngine {
           ? passedPublic.first
           : (passedPrivate.isNotEmpty ? passedPrivate.first : null);
     }
+    if (enrolled == null && exam.kind == 'university') {
+      lines.add('どの大学にも合格できなかった。浪人して来年もう一度挑戦することにした。');
+      return (
+        state: s.copyWith(exam: exam.copyWith(enrolled: ronin)),
+        lines: lines,
+      );
+    }
     if (enrolled == null) {
       // 二次募集: 出願していない公立のうち偏差値が最も低い学校。
       final fallback =
@@ -227,8 +254,64 @@ class EntranceExamEngine {
     ];
   }
 
-  List<ExamTarget> _targetsFor(String kind) =>
-      kind == 'high' ? highSchools() : const [];
+  /// 浪人を表す進学先 ID。
+  static const String ronin = 'ronin';
+
+  List<ExamTarget> targetsFor(String kind) =>
+      kind == 'high' ? highSchools() : universities();
+
+  List<ExamTarget> _targetsFor(String kind) => targetsFor(kind);
+
+  /// 大学の推薦: 音楽大学（熟練度とコンクール実績）と指定校推薦（評定平均 4.2 以上）。
+  List<ExamTarget> universityOffers(GameState s) {
+    var bestContest = 0;
+    for (final a in s.achievements) {
+      if (a.kind == 'contest' && a.weight > bestContest) bestContest = a.weight;
+    }
+    final unis = universities();
+    final offers = <ExamTarget>[];
+    if (s.player.skill >= 650 && bestContest >= 55) {
+      offers.addAll(unis.where((u) => u.isMusic && u.isPrivate));
+    }
+    final schoolDev = ctx.school(s).deviation ?? 50;
+    if (naishin10(s.player, high: true) >= 42) {
+      final designated = unis
+          .where(
+            (u) => u.isPrivate && !u.isMusic && u.deviation <= schoolDev + 5,
+          )
+          .toList();
+      if (designated.isNotEmpty) offers.add(designated.first);
+    }
+    return offers;
+  }
+
+  /// 自動進行用の大学の出願: 判定 B 以上の国公立 + 判定 A の私立 + 判定 B 以上の音大。
+  List<String> autoUniversityApplications(GameState s) {
+    final all = universities();
+    final public = all
+        .where(
+          (t) => !t.isPrivate && !t.isMusic && 'AB'.contains(estimate(s, t)),
+        )
+        .toList();
+    final private = all
+        .where((t) => t.isPrivate && !t.isMusic && estimate(s, t) == 'A')
+        .toList();
+    final music = all
+        .where((t) => t.isMusic && 'AB'.contains(estimate(s, t)))
+        .toList();
+    final chosen = [
+      if (public.isNotEmpty) public.first.id,
+      if (private.isNotEmpty) private.first.id,
+      if (music.isNotEmpty) music.first.id,
+    ];
+    return chosen.isEmpty ? [all.where((t) => !t.isMusic).last.id] : chosen;
+  }
+
+  static String? validateUniversityApplications(List<ExamTarget> chosen) {
+    if (chosen.isEmpty) return '1校以上選んでください';
+    if (chosen.length > 3) return '3校まで';
+    return null;
+  }
 
   /// プレイヤーの選択に関する検証（高校: 私立 2 校まで + 公立 1 校まで、1 校以上）。
   static String? validateHighApplications(List<ExamTarget> chosen) {

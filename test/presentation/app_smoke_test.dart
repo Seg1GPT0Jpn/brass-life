@@ -3,7 +3,12 @@ import 'package:brass_life/app/providers.dart';
 import 'package:brass_life/app/router.dart';
 import 'package:brass_life/data/repositories/hive_game_save_repository.dart';
 import 'package:brass_life/data/repositories/hive_world_meta_repository.dart';
+import 'package:brass_life/core/rng/seed_code.dart';
+import 'package:brass_life/domain/game/engine/game_context.dart';
 import 'package:brass_life/domain/game/engine/time_manager.dart';
+import 'package:brass_life/domain/game/models/game_enums.dart';
+import 'package:brass_life/domain/game/models/save_summary.dart';
+import 'package:brass_life/domain/services/world_generation/world_generator.dart';
 import 'package:brass_life/domain/value_objects/person_enums.dart';
 import 'package:brass_life/presentation/game/game_controller.dart';
 import 'package:brass_life/presentation/world/world_controller.dart';
@@ -175,6 +180,72 @@ void main() {
     container.read(routerProvider).go('/game/person/$firstMember');
     await tester.pumpAndSettle();
     expect(find.text('あなたとの関係'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('エンディング: 6 年間を終えたセーブを読み込み、エンディングを表示', (tester) async {
+    final saves = InMemoryGameSaveRepository();
+    // 6 年間を自動で遊び終えた状態を用意する
+    final world = const WorldGenerator().generate(
+      SeedCode.seedFromInput('TEST'),
+    );
+    final ctx = GameContext(world);
+    final tm = TimeManager(ctx);
+    var s = tm.newGame(world);
+    for (var i = 0; i < 2000 && s.stage != GameStage.finished; i++) {
+      s = s.pending != null
+          ? tm.autoResolve(s)
+          : tm.submitAction(s, tm.actionForPolicy(s));
+    }
+    while (s.pending != null) {
+      s = tm.autoResolve(s);
+    }
+    await saves.save(
+      '1',
+      s,
+      SaveSummary(
+        slot: '1',
+        worldSeed: s.worldSeed,
+        seedCode: SeedCode.format(s.worldSeed),
+        playerName: s.player.fullName,
+        dateLabel: '卒業',
+        schoolName: '',
+        savedAt: '',
+      ),
+    );
+
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final container = ProviderContainer(
+      overrides: [
+        worldMetaRepositoryProvider.overrideWithValue(
+          InMemoryWorldMetaRepository(),
+        ),
+        gameSaveRepositoryProvider.overrideWithValue(saves),
+      ],
+    );
+    addTearDown(container.dispose);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const BrassLifeApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('スロット 1'), findsOneWidget);
+
+    await tester.runAsync(() async {
+      await container.read(gameControllerProvider.notifier).load('1');
+    });
+    await tester.pumpAndSettle();
+    container.read(routerProvider).go('/game');
+    await tester.pumpAndSettle();
+    expect(find.text('エンディングを見る'), findsOneWidget);
+    await tester.tap(find.text('エンディングを見る'));
+    await tester.pumpAndSettle();
+    expect(find.text('称号'), findsOneWidget);
+    expect(find.text('エピローグ'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

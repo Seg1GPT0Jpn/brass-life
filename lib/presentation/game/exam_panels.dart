@@ -6,7 +6,7 @@ import '../common/widgets/common_widgets.dart';
 import 'event_panels.dart';
 import 'game_controller.dart';
 
-/// 部活推薦の打診。
+/// 推薦の打診（高校: 部活推薦 / 大学: 音大・指定校推薦）。
 class RecommendationPanel extends ConsumerWidget {
   const RecommendationPanel({super.key});
 
@@ -15,8 +15,9 @@ class RecommendationPanel extends ConsumerWidget {
     final s = ref.watch(gameControllerProvider)!;
     final ctx = ref.watch(gameContextProvider)!;
     final engine = EntranceExamEngine(ctx);
+    final isHigh = s.exam!.kind == 'high';
     final offers = [
-      for (final t in engine.highSchools())
+      for (final t in engine.targetsFor(s.exam!.kind))
         if (s.exam!.offers.contains(t.id)) t,
     ];
     Future<void> answer(String? id) async {
@@ -28,13 +29,16 @@ class RecommendationPanel extends ConsumerWidget {
     }
 
     return SectionCard(
-      title: 'イベント：部活推薦の打診',
+      title: isHigh ? 'イベント：部活推薦の打診' : 'イベント：大学推薦の打診',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
-            '吹奏楽部での活躍が評価され、強豪校から「推薦で来ないか」と声がかかった。'
-            '受ければ合格が内定し、一般入試は受けない。',
+          Text(
+            isHigh
+                ? '吹奏楽部での活躍が評価され、強豪校から「推薦で来ないか」と声がかかった。'
+                      '受ければ合格が内定し、一般入試は受けない。'
+                : 'これまでの実績や成績が評価され、大学から推薦の話が来た。'
+                      '受ければ合格が内定し、一般入試は受けない。',
           ),
           const SizedBox(height: 12),
           for (final t in offers)
@@ -42,7 +46,9 @@ class RecommendationPanel extends ConsumerWidget {
               child: ListTile(
                 title: Text(t.name),
                 subtitle: Text(
-                  '偏差値 ${t.deviation} ／ 吹奏楽部：${t.clubTier?.label ?? '－'} ／ ${t.note}',
+                  isHigh
+                      ? '偏差値 ${t.deviation} ／ 吹奏楽部：${t.clubTier?.label ?? '－'} ／ ${t.note}'
+                      : '偏差値 ${t.deviation} ／ ${t.note}',
                 ),
                 trailing: FilledButton(
                   onPressed: () => answer(t.id),
@@ -61,7 +67,7 @@ class RecommendationPanel extends ConsumerWidget {
   }
 }
 
-/// 出願（私立 2 校まで + 公立 1 校まで）。
+/// 出願（高校: 私立 2 校まで + 公立 1 校まで / 大学: 3 校まで）。
 class ApplicationPanel extends ConsumerStatefulWidget {
   const ApplicationPanel({super.key});
 
@@ -77,14 +83,17 @@ class _ApplicationPanelState extends ConsumerState<ApplicationPanel> {
     final s = ref.watch(gameControllerProvider)!;
     final ctx = ref.watch(gameContextProvider)!;
     final engine = EntranceExamEngine(ctx);
-    final targets = engine.highSchools();
+    final isHigh = s.exam!.kind == 'high';
+    final targets = engine.targetsFor(s.exam!.kind);
     final theme = Theme.of(context);
     final chosen = [
       for (final t in targets)
         if (_chosen.contains(t.id)) t,
     ];
-    final error = EntranceExamEngine.validateHighApplications(chosen);
-    final naishin = EntranceExamEngine.naishin10(s.player);
+    final error = isHigh
+        ? EntranceExamEngine.validateHighApplications(chosen)
+        : EntranceExamEngine.validateUniversityApplications(chosen);
+    final naishin = EntranceExamEngine.naishin10(s.player, high: !isHigh);
 
     Future<void> submit() async {
       final lines = ref
@@ -95,17 +104,23 @@ class _ApplicationPanelState extends ConsumerState<ApplicationPanel> {
     }
 
     return SectionCard(
-      title: 'イベント：高校の出願',
+      title: isHigh ? 'イベント：高校の出願' : 'イベント：大学の出願',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
-            '受験する高校を選ぼう。私立（併願）は2校まで、公立は1校まで。'
-            '公立に合格すれば公立へ、そうでなければ合格した私立のうち偏差値の高い学校へ進学する。',
+          Text(
+            isHigh
+                ? '受験する高校を選ぼう。私立（併願）は2校まで、公立は1校まで。'
+                      '公立に合格すれば公立へ、そうでなければ合格した私立のうち偏差値の高い学校へ進学する。'
+                : '受験する大学を3校まで選ぼう。音楽大学は学力ではなく実技（熟練度・音楽性）で判定される。'
+                      '国公立に合格すれば国公立へ、そうでなければ合格した私立のうち偏差値の高い大学へ。'
+                      'どこにも合格しなければ浪人になる。',
           ),
           const SizedBox(height: 8),
           KvRow('学力', '${s.player.academic ~/ 10}'),
-          KvRow('内申', (naishin / 10).toStringAsFixed(1)),
+          KvRow(isHigh ? '内申' : '評定平均', (naishin / 10).toStringAsFixed(1)),
+          if (!isHigh)
+            KvRow('実技', '熟練度 ${s.player.skill} ／ 音楽性 ${s.player.musicality}'),
           KvRow('部活実績', '+${EntranceExamEngine.clubBonus(s)}'),
           Text(
             '判定：A 合格確実 ／ B 有望 ／ C 五分五分 ／ D 厳しい ／ E 非常に厳しい',
@@ -124,10 +139,13 @@ class _ApplicationPanelState extends ConsumerState<ApplicationPanel> {
                 }
               }),
               title: Text(
-                '${t.name}（${t.isPrivate ? '私立' : '公立'}）　判定 ${engine.estimate(s, t)}',
+                '${t.name}（${t.isPrivate ? '私立' : (isHigh ? '公立' : '国公立')}）'
+                '　判定 ${engine.estimate(s, t)}',
               ),
               subtitle: Text(
-                '偏差値 ${t.deviation} ／ 吹奏楽部：${t.clubTier?.label ?? '－'} ／ ${t.note}',
+                isHigh
+                    ? '偏差値 ${t.deviation} ／ 吹奏楽部：${t.clubTier?.label ?? '－'} ／ ${t.note}'
+                    : '偏差値 ${t.deviation} ／ ${t.note}',
               ),
             ),
           const SizedBox(height: 8),

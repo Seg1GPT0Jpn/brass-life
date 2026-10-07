@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../domain/game/engine/contest_engine.dart';
 import '../../domain/game/engine/school_calendar.dart';
@@ -222,8 +223,21 @@ class _FinishedCard extends StatelessWidget {
   const _FinishedCard();
 
   @override
-  Widget build(BuildContext context) =>
-      const SectionCard(title: 'おしまい', child: Text('この人生の物語はここまでです。'));
+  Widget build(BuildContext context) => SectionCard(
+    title: '6年間が終わった',
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text('中学・高校の6年間の物語はここまで。あなただけのエンディングが待っている。'),
+        const SizedBox(height: 12),
+        FilledButton.icon(
+          onPressed: () => context.go('/game/ending'),
+          icon: const Icon(Icons.auto_stories),
+          label: const Text('エンディングを見る'),
+        ),
+      ],
+    ),
+  );
 }
 
 class _LogCard extends StatelessWidget {

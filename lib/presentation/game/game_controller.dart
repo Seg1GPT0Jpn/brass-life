@@ -21,10 +21,14 @@ final gameContextProvider = Provider<GameContext?>((ref) {
 
 /// ゲーム進行の ViewModel。状態の更新は必ず TimeManager を経由し、毎回オートセーブする。
 class GameController extends Notifier<GameState?> {
-  @override
+    @override
   GameState? build() {
-    // 世界が切り替わったらゲームも破棄する。
-    ref.watch(gameContextProvider);
+    // 別の世界が生成されたら、その世界と合わないゲームは破棄する。
+    // （watch すると読み込み直後に再構築されて状態が消えるため listen を使う）
+    ref.listen(worldControllerProvider, (_, next) {
+      final seed = next.value?.world.seed;
+      if (state != null && seed != state!.worldSeed) state = null;
+    });
     return null;
   }
 

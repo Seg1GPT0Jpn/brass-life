@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/app_info.dart';
+import '../../app/providers.dart';
 import '../game/game_controller.dart';
 import '../world/world_controller.dart';
 import 'title_view_model.dart';
@@ -37,6 +38,31 @@ class _TitlePageState extends ConsumerState<TitlePage> {
     if (!ok || !mounted) return;
     ref.read(gameControllerProvider.notifier).newGame();
     context.go('/game');
+  }
+
+  Future<void> _delete(String slot) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('セーブデータの削除'),
+        content: Text(
+          '${slot == 'auto' ? 'オートセーブ' : 'スロット $slot'}を削除します。元に戻せません。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('やめる'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('削除する'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await ref.read(gameSaveRepositoryProvider).delete(slot);
+    ref.invalidate(saveListProvider);
   }
 
   Future<void> _load(String slot) async {
@@ -191,6 +217,11 @@ class _TitlePageState extends ConsumerState<TitlePage> {
                                     onTap: loading
                                         ? null
                                         : () => _load(sv.slot),
+                                    trailing: IconButton(
+                                      tooltip: '削除',
+                                      icon: const Icon(Icons.delete_outline),
+                                      onPressed: () => _delete(sv.slot),
+                                    ),
                                   ),
                                 ),
                             ],

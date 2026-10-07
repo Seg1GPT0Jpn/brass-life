@@ -163,12 +163,15 @@ class TimeManager {
     var next = s;
     if (schoolId != null) {
       if (!exam.offers.contains(schoolId)) throw ArgumentError('打診のない学校です');
-      final name = ctx.index.schoolById[schoolId]!.name;
+      final name = EntranceExamEngine(ctx)
+          .targetsFor(exam.kind)
+          .firstWhere((t) => t.id == schoolId)
+          .name;
       final mem = MemoryWriter(ctx, s);
       mem.add(
         category: MemoryCategory.academic,
         subjectId: Relations.player,
-        reasonKey: 'recommended',
+        reasonKey: exam.kind == 'high' ? 'recommended' : 'recommended_univ',
         params: {'school': name},
         importance: 55,
       );
@@ -177,7 +180,7 @@ class TimeManager {
           exam: exam.copyWith(recommended: schoolId, enrolled: schoolId),
         ),
       );
-      lines.add('$nameへの部活推薦を受けることにした。合格が内定した！');
+      lines.add('$nameへの推薦を受けることにした。合格が内定した！');
     } else {
       lines.add('推薦の話は断り、一般入試で進路を決めることにした。');
     }
@@ -196,14 +199,17 @@ class TimeManager {
   ) {
     _expect(s, PendingEventType.examApplication);
     final engine = EntranceExamEngine(ctx);
-    final targets = {for (final t in engine.highSchools()) t.id: t};
+    final kind = s.exam!.kind;
+    final targets = {for (final t in engine.targetsFor(kind)) t.id: t};
     final chosen = [for (final id in schoolIds) targets[id]!];
-    final error = EntranceExamEngine.validateHighApplications(chosen);
+    final error = kind == 'high'
+        ? EntranceExamEngine.validateHighApplications(chosen)
+        : EntranceExamEngine.validateUniversityApplications(chosen);
     if (error != null) throw ArgumentError(error);
     final lines = [
       '出願した学校：',
       for (final t in chosen)
-        '・${t.name}（${t.isPrivate ? '私立' : '公立'}／判定 ${engine.estimate(s, t)}）',
+        '・${t.name}（${t.note.isEmpty ? (t.isPrivate ? '私立' : '公立') : t.note}／判定 ${engine.estimate(s, t)}）',
     ];
     final next = s.copyWith(exam: s.exam!.copyWith(applications: schoolIds));
     return _finishEvent(next, '出願', lines, 'apply:${schoolIds.join(',')}');
@@ -253,7 +259,9 @@ class TimeManager {
       ).state,
       PendingEventType.examApplication => resolveApplication(
         s,
-        EntranceExamEngine(ctx).autoApplications(s),
+        s.exam!.kind == 'high'
+            ? EntranceExamEngine(ctx).autoApplications(s)
+            : EntranceExamEngine(ctx).autoUniversityApplications(s),
       ).state,
       PendingEventType.notice => resolveNotice(s).state,
     };
@@ -484,14 +492,23 @@ class TimeManager {
       final r = ConcertEngine(ctx).run(cur, null);
       cur = _log(r.state, '定期演奏会', r.lines);
     }
-    // 7. 高校受験（中学 3 年）
-    if (cur.stage == GameStage.middle && cur.player.grade == 3) {
+    // 7. 受験（中学 3 年: 高校受験 / 高校 3 年: 大学受験）
+    final examKind = switch (cur.stage) {
+      GameStage.middle => 'high',
+      GameStage.high => 'university',
+      GameStage.finished => null,
+    };
+    if (examKind != null && cur.player.grade == 3) {
+      final isHigh = examKind == 'high';
       final exam = EntranceExamEngine(ctx);
+      final targets = {for (final t in exam.targetsFor(examKind)) t.id: t};
       if (cur.turn == school.turnOf(fy, 11, 3) && cur.exam == null) {
-        final offers = exam.recommendationOffers(cur);
+        final offers = isHigh
+            ? exam.recommendationOffers(cur)
+            : exam.universityOffers(cur);
         cur = cur.copyWith(
           exam: EntranceExamState(
-            kind: 'high',
+            kind: examKind,
             offers: [for (final o in offers) o.id],
           ),
         );
@@ -516,22 +533,21 @@ class TimeManager {
           ),
         );
       }
-      if (cur.turn == school.turnOf(fy, 2, 2) &&
+      final privateTurn = isHigh
+          ? school.turnOf(fy, 2, 2)
+          : school.turnOf(fy, 2, 3);
+      final publicTurn = isHigh
+          ? school.turnOf(fy, 3, 2)
+          : school.turnOf(fy, 3, 1);
+      if (cur.turn == privateTurn &&
           e != null &&
           e.recommended == null &&
-          e.applications.isNotEmpty &&
-          !e.results.keys.any((id) => ctx.index.schoolById[id]!.isPrivate)) {
-        final hasPrivate = e.applications.any(
-          (id) => ctx.index.schoolById[id]!.isPrivate,
-        );
-        if (hasPrivate) {
-          final r = exam.announce(cur, privateOnly: true);
-          return _notice(r.state, '私立高校 合格発表', r.lines);
-        }
+          e.applications.any((id) => targets[id]!.isPrivate) &&
+          !e.results.keys.any((id) => targets[id]!.isPrivate)) {
+        final r = exam.announce(cur, privateOnly: true);
+        return _notice(r.state, isHigh ? '私立高校 合格発表' : '私立大学 合格発表', r.lines);
       }
-      if (cur.turn == school.turnOf(fy, 3, 2) &&
-          e != null &&
-          e.enrolled == null) {
+      if (cur.turn == publicTurn && e != null && e.enrolled == null) {
         var st = cur;
         final lines = <String>[];
         if (e.recommended == null) {
@@ -540,17 +556,22 @@ class TimeManager {
           lines.addAll(r.lines);
         }
         final d2 = exam.decideEnrollment(st);
-        return _notice(d2.state, '公立高校 合格発表・進路決定', [...lines, ...d2.lines]);
+        return _notice(
+          d2.state,
+          isHigh ? '公立高校 合格発表・進路決定' : '国公立大学 合格発表・進路決定',
+          [...lines, ...d2.lines],
+        );
       }
+      final gradKey = isHigh ? 'graduated_middle' : 'graduated_high';
       if (cur.turn == school.turnOf(fy, 3, 3) &&
-          !cur.memories.any((m) => m.reasonKey == 'graduated_middle')) {
+          !cur.memories.any((m) => m.reasonKey == gradKey)) {
         final mem = MemoryWriter(ctx, cur);
         mem.add(
           category: MemoryCategory.life,
           subjectId: Relations.player,
-          reasonKey: 'graduated_middle',
+          reasonKey: gradKey,
           params: {'school': ctx.school(cur).name},
-          importance: 50,
+          importance: isHigh ? 50 : 60,
         );
         return _notice(mem.apply(cur), '卒業式', [
           '${ctx.school(cur).name}を卒業した。',
@@ -667,16 +688,41 @@ class TimeManager {
       final r = transition.enterHighSchool(next, exam.enrolled!, fiscalYear);
       return _notice(r.state, '高校入学', ['$fiscalYear年度が始まった。', ...r.lines]);
     }
-    // 高校卒業（Phase 6 で大学進学・エンディングに置き換える）
+    // 高校卒業 → エンディング
     if (s.player.grade >= 3 && s.stage == GameStage.high) {
-      return _log(
-        next.copyWith(
-          stage: GameStage.finished,
-          player: s.player.copyWith(grade: 4),
-        ),
-        null,
-        ['高校を卒業した。（大学編・エンディングは今後のアップデートで追加されます）'],
+      var st = next.copyWith(
+        exam: next.exam ?? const EntranceExamState(kind: 'university'),
       );
+      if (st.exam!.enrolled == null) {
+        st = EntranceExamEngine(ctx).decideEnrollment(st).state;
+      }
+      final enrolled = st.exam!.enrolled!;
+      final target = EntranceExamEngine(ctx)
+          .universities()
+          .where((u) => u.id == enrolled)
+          .firstOrNull;
+      final label = target == null ? '浪人' : '${target.name} 進学';
+      final finished = st.copyWith(
+        stage: GameStage.finished,
+        player: s.player.copyWith(grade: 4),
+        achievements: [
+          ...st.achievements,
+          Achievement(
+            fiscalYear: fiscalYear,
+            schoolId: enrolled,
+            kind: target == null
+                ? 'ronin'
+                : (target.isMusic ? 'univ_music' : 'univ'),
+            label: label,
+            weight: target == null ? 0 : (target.deviation - 30).clamp(0, 60),
+          ),
+        ],
+      );
+      return _notice(finished, '6年間の終わり', [
+        '高校を卒業し、新しい春を迎えた。',
+        target == null ? '来年の再挑戦に向けて、予備校に通うことになった。' : '春から${target.name}に通う。',
+        'エンディングを見よう。',
+      ]);
     }
 
     final cohort = RosterService(ctx).cohort(club, fiscalYear);
