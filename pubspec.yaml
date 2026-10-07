@@ -1,0 +1,37 @@
+name: brass_life
+description: "吹奏楽部×学校生活×人生シミュレーション（完全オフライン・決定論的乱数）"
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.13.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^3.4.3
+  freezed_annotation: ^3.1.0
+  go_router: ^18.0.2
+  hive_ce: ^2.20.2
+  hive_ce_flutter: ^2.4.0
+  json_annotation: ^4.12.0
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.16.2
+  freezed: ^4.0.2
+  json_serializable: ^6.14.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/fonts/OFL.txt
+  fonts:
+    # BIZ UDPゴシック（SIL Open Font License 1.1）。
+    # 完全オフライン動作のため、日本語フォントをアプリに同梱する。
+    - family: BIZUDPGothic
+      fonts:
+        - asset: assets/fonts/BIZUDPGothic-Regular.ttf
+        - asset: assets/fonts/BIZUDPGothic-Bold.ttf
+          weight: 700
