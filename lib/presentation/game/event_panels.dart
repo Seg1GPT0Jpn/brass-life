@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/game/engine/contest_engine.dart';
+import '../../domain/game/engine/executive_engine.dart';
 import '../../domain/game/engine/performance.dart';
 import '../../domain/game/engine/relations.dart';
 import '../../domain/game/engine/time_manager.dart';
 import '../../domain/game/master/approach_cards.dart';
+import '../../domain/game/models/candidacy.dart';
 import '../../domain/game/models/game_enums.dart';
 import '../../domain/value_objects/school_enums.dart';
 import '../common/widgets/common_widgets.dart';
@@ -144,22 +146,60 @@ abstract final class ContestStageName {
 }
 
 /// 幹部選出イベント。
-class ExecutivePanel extends ConsumerWidget {
+///
+/// 「立候補する」を選ぶと、狙う役職となりたい気持ちの強さを決めてから名乗り出る。
+class ExecutivePanel extends ConsumerStatefulWidget {
   const ExecutivePanel({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ExecutivePanel> createState() => _ExecutivePanelState();
+}
+
+class _ExecutivePanelState extends ConsumerState<ExecutivePanel> {
+  bool _running = false;
+  ClubRole? _role;
+  int _desire = 3;
+
+  static String _howChosen(ClubRole r) => switch (r) {
+    ClubRole.conductor => '音楽性と熟練度で選ばれる',
+    ClubRole.sectionLeader => '同じ系統（木管・金管・打楽器）の中で、実力と統率力で選ばれる',
+    ClubRole.partLeader => '同じ楽器の中で一番上手い人がなる',
+    _ => '決め方（投票・指名など）と、統率力・仲間からの信頼で選ばれる',
+  };
+
+  Future<void> _submit(Candidacy c) async {
+    final lines = ref.read(gameControllerProvider.notifier).resolveExecutive(c);
+    if (!mounted) return;
+    await showResultDialog(context, '幹部選出', lines);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final ctx = ref.watch(gameContextProvider)!;
     final s = ref.watch(gameControllerProvider)!;
     final club = ctx.club(s);
     final theme = Theme.of(context);
-    Future<void> choose(CandidacyChoice c) async {
-      final lines = ref
-          .read(gameControllerProvider.notifier)
-          .resolveExecutive(c);
-      if (!context.mounted) return;
-      await showResultDialog(context, '幹部選出', lines);
-    }
+    final roles = ExecutiveEngine(ctx).runnableRoles(s);
+    final canRun = s.player.grade == 2 && roles.isNotEmpty;
+    final role = _role != null && roles.contains(_role) ? _role : null;
+    final family = s.player.instrument?.family;
+
+    Widget choiceButton(String label, String description, VoidCallback onTap) =>
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: OutlinedButton(
+            onPressed: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Column(
+                children: [
+                  Text(label, style: theme.textTheme.titleSmall),
+                  Text(description, style: theme.textTheme.bodySmall),
+                ],
+              ),
+            ),
+          ),
+        );
 
     return SectionCard(
       title: 'イベント：新幹部の選出',
@@ -174,29 +214,85 @@ class ExecutivePanel extends ConsumerWidget {
             '決め方',
             '${club.selectionCulture.label}（${club.selectionCulture.description}）',
           ),
-          const SizedBox(height: 8),
-          Text(
-            '部長（代表）に選ばれるかは、統率力に関わる性格・仲間からの信頼・顧問の評価、'
-            'そして決め方によって変わる。',
-            style: theme.textTheme.bodySmall,
-          ),
           const SizedBox(height: 12),
-          for (final c in CandidacyChoice.values)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: OutlinedButton(
-                onPressed: () => choose(c),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Column(
-                    children: [
-                      Text(c.label, style: theme.textTheme.titleSmall),
-                      Text(c.description, style: theme.textTheme.bodySmall),
-                    ],
+          if (!_running) ...[
+            if (canRun)
+              choiceButton(
+                CandidacyChoice.run.label,
+                CandidacyChoice.run.description,
+                () => setState(() => _running = true),
+              ),
+            choiceButton(
+              CandidacyChoice.neutral.label,
+              CandidacyChoice.neutral.description,
+              () => _submit(const Candidacy.neutral()),
+            ),
+            choiceButton(
+              CandidacyChoice.decline.label,
+              CandidacyChoice.decline.description,
+              () => _submit(const Candidacy.decline()),
+            ),
+          ] else ...[
+            Text('どの役職に立候補する？', style: theme.textTheme.titleSmall),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final r in roles)
+                  ChoiceChip(
+                    label: Text(
+                      r == ClubRole.sectionLeader && family != null
+                          ? '${r.label}（${family.label}）'
+                          : r == ClubRole.partLeader &&
+                                s.player.instrument != null
+                          ? '${r.label}（${s.player.instrument!.label}）'
+                          : r.label,
+                    ),
+                    selected: role == r,
+                    onSelected: (_) => setState(() => _role = r),
                   ),
-                ),
+              ],
+            ),
+            if (role != null) ...[
+              const SizedBox(height: 6),
+              Text(_howChosen(role), style: theme.textTheme.bodySmall),
+            ],
+            const SizedBox(height: 16),
+            Text(
+              'なりたい気持ち：${Candidacy.desireLabel(_desire)}',
+              style: theme.textTheme.titleSmall,
+            ),
+            Slider(
+              value: _desire.toDouble(),
+              min: Candidacy.minDesire.toDouble(),
+              max: Candidacy.maxDesire.toDouble(),
+              divisions: Candidacy.maxDesire - Candidacy.minDesire,
+              label: Candidacy.desireLabel(_desire),
+              onChanged: (v) => setState(() => _desire = v.round()),
+            ),
+            Text(
+              '気持ちが強いほど本気が伝わって選ばれやすくなる。'
+              'でも選ばれなかったときの心の傷は深く、なかなか消えない'
+              '${role == null ? '' : '（この役職でダメだった場合：心の傷 +${ExecutiveEngine.heartacheOf(role, _desire)}）'}。',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: _desire >= 4 ? theme.colorScheme.error : null,
               ),
             ),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: role == null
+                  ? null
+                  : () => _submit(Candidacy.run(role, _desire)),
+              child: Text(
+                role == null ? '役職を選んでください' : '「${role.label}」に立候補する',
+              ),
+            ),
+            TextButton(
+              onPressed: () => setState(() => _running = false),
+              child: const Text('やめて戻る'),
+            ),
+          ],
         ],
       ),
     );

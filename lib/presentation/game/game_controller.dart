@@ -5,6 +5,7 @@ import '../../core/rng/seed_code.dart';
 import '../../domain/game/engine/game_context.dart';
 import '../../domain/game/engine/time_manager.dart';
 import '../../domain/game/master/approach_cards.dart';
+import '../../domain/game/models/candidacy.dart';
 import '../../domain/game/models/game_enums.dart';
 import '../../domain/game/models/game_state.dart';
 import '../../domain/game/models/player_setup.dart';
@@ -66,7 +67,7 @@ class GameController extends Notifier<GameState?> {
     return r.lines;
   }
 
-  List<String> resolveExecutive(CandidacyChoice choice) {
+  List<String> resolveExecutive(Candidacy choice) {
     final r = _tm.resolveExecutive(state!, choice);
     _commit(r.state);
     return r.lines;

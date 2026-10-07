@@ -3,6 +3,7 @@ import '../../value_objects/instrument.dart';
 import '../../value_objects/personality.dart';
 import '../../value_objects/relationship_vector.dart';
 import '../../value_objects/school_enums.dart';
+import '../models/candidacy.dart';
 import '../models/game_enums.dart';
 import '../models/game_state.dart';
 import 'game_context.dart';
@@ -13,9 +14,13 @@ import 'relations.dart';
 ///
 /// 役職は学校の幹部制度で決まる:
 /// - 制度A（中央集権型）: 部長・副部長・学生指揮・会計
-/// - 制度B（合議型）: 学年代表・副代表
-/// - 制度C（顧問主導型）: 部長・副部長（名目）
-/// どの制度でも各楽器のパートリーダーは、その楽器で最も上手い 2 年生（いなければ 1 年生）。
+/// - 制度B（合議型）: 学年代表・副代表・学生指揮
+/// - 制度C（顧問主導型）: 部長・副部長（名目）・学生指揮
+/// どの制度でも、木管・金管・打楽器のセクションリーダー（その系統の 2 年生から実力と統率力で）と、
+/// 各楽器のパートリーダー（その楽器で最も上手い 2 年生、いなければ 1 年生）を置く。
+///
+/// プレイヤーは役職を選んで立候補できる（[Candidacy]）。立候補した人は狙った役職の候補にだけなり、
+/// なりたい気持ちが強いほど選ばれやすいが、選ばれなかったときの心の傷も深く長く残る。
 ///
 /// 選び方は選出文化で決まる:
 /// - 部員投票: 全部員が「信頼 + 好感/2 + 統率力/2 + 揺らぎ」が最大の候補に投票
@@ -34,12 +39,59 @@ class ExecutiveEngine {
       ClubRole.conductor,
       ClubRole.treasurer,
     ],
-    ExecutiveSystem.b => [ClubRole.gradeRep, ClubRole.viceRep],
-    ExecutiveSystem.c => [ClubRole.captain, ClubRole.viceCaptain],
+    ExecutiveSystem.b => [
+      ClubRole.gradeRep,
+      ClubRole.viceRep,
+      ClubRole.conductor,
+    ],
+    ExecutiveSystem.c => [
+      ClubRole.captain,
+      ClubRole.viceCaptain,
+      ClubRole.conductor,
+    ],
   };
 
+  /// セクションリーダーを置く系統。
+  static const sections = [
+    InstrumentFamily.woodwind,
+    InstrumentFamily.brass,
+    InstrumentFamily.percussion,
+  ];
+
+  /// プレイヤーが立候補できる役職（2 年生の幹部選出時）。
+  List<ClubRole> runnableRoles(GameState s) {
+    final family = s.player.instrument?.family;
+    return [
+      ...positionsOf(ctx.club(s).executiveSystem),
+      if (family != null && sections.contains(family)) ClubRole.sectionLeader,
+      if (s.player.instrument != null) ClubRole.partLeader,
+    ];
+  }
+
+  /// 立候補した役職に選ばれなかったときの心の傷（気持ちの強さ × 役職の重み）。
+  static int heartacheOf(ClubRole role, int desire) =>
+      desire *
+      switch (role) {
+        ClubRole.captain || ClubRole.gradeRep => 12,
+        ClubRole.conductor => 11,
+        ClubRole.sectionLeader => 9,
+        ClubRole.partLeader => 7,
+        _ => 8,
+      };
+
+  /// 立候補による候補者としての加点（気持ちが強いほど本気が伝わる）。
+  static int _desireBonus(int desire) => desire * 5;
+
+  /// 学生指揮としての音楽的な実力: 表現の適性×3 + 音楽性/2 + 熟練度/2。
+  /// NPC は音楽性を持たないので、プレイヤーの初期値（100）相当とみなす。
+  int _musicalScore(GameState s, String id) => id == Relations.player
+      ? s.player.aptitude.expression * 3 +
+            s.player.musicality ~/ 2 +
+            s.player.skill ~/ 2
+      : ctx.npc(s, id).aptitude.expression * 3 + 50 + _skill(s, id) ~/ 2;
+
   /// 統率力（候補者の資質）。
-  int _leadership(GameState s, String id, CandidacyChoice? choice) {
+  int _leadership(GameState s, String id, Candidacy? choice) {
     final List<TraitTag> traits;
     final PersonalityAxes p;
     var extra = 0;
@@ -50,12 +102,14 @@ class ExecutiveEngine {
           s.player.social ~/ 3 +
           s.player.advisorTrust ~/ 5 +
           s.player.skill ~/ 25;
-      if (choice == CandidacyChoice.run) extra += 25;
+      if (choice != null && choice.isRun) extra += _desireBonus(choice.desire);
     } else {
       final n = ctx.npc(s, id);
       traits = n.traits;
       p = n.personality;
-      extra = (s.npcs[id]?.skill ?? 0) ~/ 25;
+      // プレイヤーの社交性・顧問評価に相当するものとして、やる気（部への熱意）を見る。
+      final st = s.npcs[id];
+      extra = (st?.skill ?? 0) ~/ 25 + (st?.motivation ?? 0) ~/ 3;
     }
     int t(String trait, int pts) {
       for (final x in traits) {
@@ -86,10 +140,7 @@ class ExecutiveEngine {
   String _name(GameState s, String id) =>
       id == Relations.player ? s.player.fullName : ctx.npc(s, id).fullName;
 
-  ({GameState state, List<String> lines}) run(
-    GameState s,
-    CandidacyChoice? choice,
-  ) {
+  ({GameState state, List<String> lines}) run(GameState s, Candidacy? choice) {
     final club = ctx.club(s);
     final members = ctx.activeMembers(s);
     final playerActive = !s.player.retired && s.player.instrument != null;
@@ -98,7 +149,7 @@ class ExecutiveEngine {
         if (m.grade == 2) m.id,
       if (playerActive &&
           s.player.grade == 2 &&
-          choice != CandidacyChoice.decline)
+          choice?.choice != CandidacyChoice.decline)
         Relations.player,
     ];
     final lines = <String>[];
@@ -112,7 +163,7 @@ class ExecutiveEngine {
       turn: s.turn,
       domain: 'executive',
       actor: club.id,
-      choice: choice?.name ?? '',
+      choice: choice?.key ?? '',
     );
     final lead = {for (final id in secondYears) id: _leadership(s, id, choice)};
 
@@ -204,27 +255,72 @@ class ExecutiveEngine {
         return c != 0 ? c : a.compareTo(b);
       });
     final positions = positionsOf(club.executiveSystem);
+    // 立候補したプレイヤーは狙った役職の候補にだけなる。
+    final target = choice != null && choice.isRun ? choice.role : null;
+    final desire = choice?.desire ?? 0;
+    bool eligible(String id, ClubRole pos) =>
+        id != Relations.player || target == null || target == pos;
+    // 実力で選ぶ役職での加点（各役職の得点の尺度に合わせる）。
+    // 部長などの票・指名で決まる役職は、統率力への加点（_desireBonus）で反映済み。
+    int bonus(String id, ClubRole pos) {
+      if (id != Relations.player || target != pos) return 0;
+      return switch (pos) {
+        ClubRole.conductor => 20 + desire * 15,
+        ClubRole.sectionLeader => 10 + desire * 8,
+        ClubRole.partLeader => 20 + desire * 12,
+        _ => 0,
+      };
+    }
+
     final taken = <String>{};
     for (final pos in positions) {
       String? chosen;
       if (pos == ClubRole.conductor) {
         // 学生指揮は音楽的な実力で選ぶ
-        final pool = ranked.where((c) => !taken.contains(c)).toList()
-          ..sort((a, b) {
-            int mus(String id) => id == Relations.player
-                ? s.player.musicality ~/ 2 + s.player.skill ~/ 2
-                : ctx.npc(s, id).aptitude.expression * 5 + _skill(s, id) ~/ 2;
-            final c = mus(b).compareTo(mus(a));
-            return c != 0 ? c : a.compareTo(b);
-          });
+        final pool =
+            ranked.where((c) => !taken.contains(c) && eligible(c, pos)).toList()
+              ..sort((a, b) {
+                int mus(String id) => _musicalScore(s, id) + bonus(id, pos);
+                final c = mus(b).compareTo(mus(a));
+                return c != 0 ? c : a.compareTo(b);
+              });
         chosen = pool.isEmpty ? null : pool.first;
       } else {
-        chosen = ranked.firstWhere((c) => !taken.contains(c), orElse: () => '');
+        chosen = ranked.firstWhere(
+          (c) => !taken.contains(c) && eligible(c, pos),
+          orElse: () => '',
+        );
         if (chosen.isEmpty) chosen = null;
       }
       if (chosen == null) continue;
       taken.add(chosen);
       roles[chosen] = pos;
+    }
+
+    // セクションリーダー: 系統ごとに、まだ役職のない 2 年生から実力と統率力で
+    final sectionOf = <String, InstrumentFamily>{};
+    for (final family in sections) {
+      final pool =
+          secondYears
+              .where(
+                (c) =>
+                    !taken.contains(c) &&
+                    eligible(c, ClubRole.sectionLeader) &&
+                    _instrument(s, c)?.family == family,
+              )
+              .toList()
+            ..sort((a, b) {
+              int sc(String id) =>
+                  _skill(s, id) ~/ 3 +
+                  lead[id]! ~/ 2 +
+                  bonus(id, ClubRole.sectionLeader);
+              final c = sc(b).compareTo(sc(a));
+              return c != 0 ? c : a.compareTo(b);
+            });
+      if (pool.isEmpty) continue;
+      taken.add(pool.first);
+      roles[pool.first] = ClubRole.sectionLeader;
+      sectionOf[pool.first] = family;
     }
 
     // パートリーダー: 各楽器で最も上手い 2 年生（いなければ 1 年生）
@@ -245,11 +341,14 @@ class ExecutiveEngine {
           ? pool
           : e.value.where((id) => grade(id) == 1).toList();
       if (pool2.isEmpty) continue;
+      int sc(String id) => _skill(s, id) + bonus(id, ClubRole.partLeader);
       pool2.sort((a, b) {
-        final c = _skill(s, b).compareTo(_skill(s, a));
+        final c = sc(b).compareTo(sc(a));
         return c != 0 ? c : a.compareTo(b);
       });
-      roles.putIfAbsent(pool2.first, () => ClubRole.partLeader);
+      // ほかの役職に就いた人は除き、残りで最も上手い人
+      final leader = pool2.where((id) => !roles.containsKey(id)).firstOrNull;
+      if (leader != null) roles[leader] = ClubRole.partLeader;
     }
 
     // 結果の反映
@@ -291,7 +390,10 @@ class ExecutiveEngine {
     }
     for (final e in roles.entries) {
       if (e.key == top || e.value == ClubRole.partLeader) continue;
-      lines.add('${e.value.label}：${_name(s, e.key)}');
+      final section = sectionOf[e.key];
+      lines.add(
+        '${e.value.label}${section == null ? '' : '（${section.label}）'}：${_name(s, e.key)}',
+      );
     }
     if (club.selectionCulture == SelectionCulture.vote && votes.isNotEmpty) {
       final tally = votes.entries.toList()
@@ -306,34 +408,64 @@ class ExecutiveEngine {
 
     final myRole = roles[Relations.player];
     if (playerActive && s.player.grade == 2) {
-      if (myRole != null) {
-        lines.add('あなたは「${myRole.label}」になった。');
+      if (target != null && myRole == target) {
+        lines.add('あなたは立候補した「${myRole!.label}」に選ばれた！');
         player = player.copyWith(
-          motivation: (player.motivation + 8).clamp(0, 100),
+          motivation: (player.motivation + 4 + desire * 2).clamp(0, 100),
+          // 念願がかなうと、古い傷も少し癒える
+          heartache: (player.heartache - desire * 4).clamp(0, 100),
         );
-      } else if (choice == CandidacyChoice.run) {
-        lines.add('立候補したが、選ばれなかった……。');
+      } else if (target != null) {
+        // 狙った役職に選ばれなかった: 気持ちが強いほど深く傷つく
+        final winner = roles.entries
+            .where(
+              (e) =>
+                  e.value == target && _sameGroup(s, e.key, target, sectionOf),
+            )
+            .map((e) => e.key)
+            .firstOrNull;
+        final damage = heartacheOf(target, desire);
+        lines.add(
+          '「${target.label}」に立候補したが、選ばれたのは'
+          '${winner == null ? '別の人' : _name(s, winner)}だった……。',
+        );
+        if (myRole != null) lines.add('代わりに「${myRole.label}」を任された。');
+        lines.add(switch (desire) {
+          >= 5 => 'すべてを懸けていた。頭が真っ白になり、楽器を持つ手が震えた。この痛みはきっと長く残る。',
+          4 => '本気でなりたかった分、悔しさが胸に深く刺さった。しばらくは立ち直れそうにない。',
+          3 => '悔しさがじわじわとこみ上げてくる。',
+          _ => '残念だけど、仕方ない。少しだけ胸がちくりとした。',
+        });
+        lines.add('心の傷 +$damage');
         player = player.copyWith(
-          motivation: (player.motivation - 6).clamp(0, 100),
+          motivation: (player.motivation - 3 - damage ~/ 2).clamp(0, 100),
+          stress: (player.stress + damage ~/ 2).clamp(0, 100),
+          heartache: (player.heartache + damage).clamp(0, 100),
         );
-        if (top != null) {
+        if (winner != null) {
           Relations.add(
             relations,
             Relations.player,
-            top,
-            const RelationshipVector(rivalry: 8),
+            winner,
+            RelationshipVector(rivalry: 4 + desire * 2),
           );
         }
         mem.add(
           category: MemoryCategory.appointment,
           subjectId: Relations.player,
-          objectIds: [?top],
-          reasonKey: 'lost_election',
+          objectIds: [?winner],
+          reasonKey: desire >= 4 ? 'lost_role_heartbreak' : 'lost_role',
           params: {
             'actor': player.fullName,
-            'target': top == null ? '－' : _name(s, top),
+            'role': target.label,
+            'target': winner == null ? '別の人' : _name(s, winner),
           },
-          importance: 45,
+          importance: 30 + damage ~/ 2,
+        );
+      } else if (myRole != null) {
+        lines.add('あなたは「${myRole.label}」になった。');
+        player = player.copyWith(
+          motivation: (player.motivation + 8).clamp(0, 100),
         );
       }
     }
@@ -342,6 +474,7 @@ class ExecutiveEngine {
       final weight = switch (myRole) {
         ClubRole.captain || ClubRole.gradeRep => 70,
         ClubRole.conductor => 55,
+        ClubRole.sectionLeader => 35,
         ClubRole.partLeader => 25,
         _ => 40,
       };
@@ -369,6 +502,19 @@ class ExecutiveEngine {
     );
     return (state: out, lines: lines);
   }
+
+  /// [id] がプレイヤーと同じ枠を争った相手か
+  /// （セクションリーダーなら同じ系統、パートリーダーなら同じ楽器）。
+  bool _sameGroup(
+    GameState s,
+    String id,
+    ClubRole role,
+    Map<String, InstrumentFamily> sectionOf,
+  ) => switch (role) {
+    ClubRole.sectionLeader => sectionOf[id] == s.player.instrument?.family,
+    ClubRole.partLeader => _instrument(s, id) == s.player.instrument,
+    _ => true,
+  };
 
   String? _bestThirdYear(GameState s) {
     String? best;

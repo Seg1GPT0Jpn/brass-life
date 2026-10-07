@@ -6,6 +6,7 @@ import 'package:brass_life/domain/game/engine/performance.dart';
 import 'package:brass_life/domain/game/engine/relations.dart';
 import 'package:brass_life/domain/game/engine/time_manager.dart';
 import 'package:brass_life/domain/game/master/approach_cards.dart';
+import 'package:brass_life/domain/game/models/candidacy.dart';
 import 'package:brass_life/domain/game/models/game_enums.dart';
 import 'package:brass_life/domain/game/models/game_state.dart';
 import 'package:brass_life/domain/services/world_generation/world_generator.dart';
@@ -86,17 +87,18 @@ void main() {
               : tm.submitAction(s, WeeklyAction.partPractice);
           expect(s.player.grade, lessThanOrEqualTo(2));
         }
-        final run = tm.resolveExecutive(s, CandidacyChoice.run).state;
-        final decline = tm.resolveExecutive(s, CandidacyChoice.decline).state;
+        final runFor = Candidacy.run(ClubRole.conductor, 3);
+        final run = tm.resolveExecutive(s, runFor).state;
+        final decline = tm.resolveExecutive(s, const Candidacy.decline()).state;
         // 辞退すれば幹部（パートリーダー以外）にはならない
         final declined = decline.roles[Relations.player];
         expect(declined == null || declined == ClubRole.partLeader, isTrue);
         // 立候補した場合は、役職に就くか「落選」の記憶が残る
         final role = run.roles[Relations.player];
-        final lost = run.memories.any((m) => m.reasonKey == 'lost_election');
+        final lost = run.memories.any((m) => m.reasonKey == 'lost_role');
         expect(role != null || lost, isTrue);
         // 同じ選択は同じ結果
-        expect(tm.resolveExecutive(s, CandidacyChoice.run).state, run);
+        expect(tm.resolveExecutive(s, runFor).state, run);
       });
     });
   }

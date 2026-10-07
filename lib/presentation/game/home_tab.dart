@@ -128,6 +128,8 @@ class _StatusCard extends ConsumerWidget {
           ValueBar(label: '疲労', value: p.fatigue, max: 100),
           ValueBar(label: 'ストレス', value: p.stress, max: 100),
           ValueBar(label: 'やる気', value: p.motivation, max: 100),
+          if (p.heartache > 0)
+            ValueBar(label: '心の傷', value: p.heartache, max: 100),
           ValueBar(label: '社交性', value: p.social, max: 100),
           ValueBar(label: '顧問の評価', value: p.advisorTrust, max: 100),
           const Divider(),

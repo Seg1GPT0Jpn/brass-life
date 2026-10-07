@@ -116,6 +116,7 @@ enum ClubRole {
   treasurer('会計'),
   gradeRep('学年代表'),
   viceRep('副代表'),
+  sectionLeader('セクションリーダー'),
   partLeader('パートリーダー');
 
   const ClubRole(this.label);
@@ -124,7 +125,7 @@ enum ClubRole {
 
 /// 幹部選出でのプレイヤーの意思。
 enum CandidacyChoice {
-  run('立候補する', '自分から部長（代表）に名乗り出る。'),
+  run('立候補する', 'なりたい役職を選んで名乗り出る。'),
   neutral('流れに任せる', '推されたら引き受ける。'),
   decline('辞退する', '役職には就かない。');
 

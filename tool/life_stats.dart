@@ -17,28 +17,60 @@ void main(List<String> args) {
     final tm = TimeManager(ctx);
     var s = tm.newGame(world);
     final sw = Stopwatch()..start();
-    for (final policy in [MonthlyPolicy.studyFocus, MonthlyPolicy.practiceFocus]) {
+    for (final policy in [
+      MonthlyPolicy.studyFocus,
+      MonthlyPolicy.practiceFocus,
+    ]) {
       s = tm.autoPlayMonths(s, 37, policy);
     }
     while (s.pending != null) {
       s = tm.autoResolve(s);
     }
     final ending = EndingAnalyzer(ctx).analyze(s);
-    print('  称号: ${ending.title}（${ending.titleReason}） 次点: ${ending.otherTitles}');
+    print(
+      '  称号: ${ending.title}（${ending.titleReason}） 次点: ${ending.otherTitles}',
+    );
     for (final p in ending.epilogue) {
       print('  > $p');
     }
     for (final h in ending.highlights) {
       print('  * $h');
     }
-    print('[$seed] stage=${s.stage.label} turn=${s.turn} ${sw.elapsedMilliseconds}ms schools=${s.schoolHistory.map((id) => ctx.index.schoolById[id]!.name)} now=${ctx.school(s).name}');
-    print('  academic=${s.player.academic} skill=${s.player.skill} inst=${s.player.instrument?.label} prev=${s.player.previousInstrument?.label}');
-    for (final l in s.logs.where((l) => l.actionLabel == null || !WeeklyAction.values.any((a) => a.label == l.actionLabel))) {
-      if (l.lines.any((x) => x.contains('合格') || x.contains('入学') || x.contains('進学') || x.contains('出願') || x.contains('推薦') || x.contains('仲間'))) {
-        print('  ${l.dateLabel} ${l.actionLabel ?? ''}: ${l.lines.join(' / ')}');
+    print(
+      '[$seed] stage=${s.stage.label} turn=${s.turn} ${sw.elapsedMilliseconds}ms schools=${s.schoolHistory.map((id) => ctx.index.schoolById[id]!.name)} now=${ctx.school(s).name}',
+    );
+    print(
+      '  academic=${s.player.academic} skill=${s.player.skill} inst=${s.player.instrument?.label} prev=${s.player.previousInstrument?.label}',
+    );
+    for (final l in s.logs.where(
+      (l) =>
+          l.actionLabel == null ||
+          !WeeklyAction.values.any((a) => a.label == l.actionLabel),
+    )) {
+      if (l.lines.any(
+        (x) =>
+            x.contains('合格') ||
+            x.contains('入学') ||
+            x.contains('進学') ||
+            x.contains('出願') ||
+            x.contains('推薦') ||
+            x.contains('仲間'),
+      )) {
+        print(
+          '  ${l.dateLabel} ${l.actionLabel ?? ''}: ${l.lines.join(' / ')}',
+        );
       }
     }
-    for (final m in s.memories.where((m) => {'exam_passed', 'exam_failed', 'recommended', 'entered_high', 'reunited', 'graduated_middle'}.contains(m.reasonKey))) {
+    for (final m in s.memories.where(
+      (m) => {
+        'exam_passed',
+        'exam_failed',
+        'recommended',
+        'entered_high',
+        'reunited',
+        'graduated_middle',
+      }.contains(m.reasonKey),
+    )) {
       print('  記憶: ${m.date.label} ${renderMemory(m.reasonKey, m.params)}');
     }
     for (final a in s.achievements) {

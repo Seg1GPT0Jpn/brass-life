@@ -14,10 +14,14 @@ void main() {
     final tm = TimeManager(ctx);
     var s = tm.newGame(world);
     while (s.stage == GameStage.middle) {
-      s = s.pending != null ? tm.autoResolve(s) : tm.submitAction(s, tm.actionForPolicy(s));
+      s = s.pending != null
+          ? tm.autoResolve(s)
+          : tm.submitAction(s, tm.actionForPolicy(s));
     }
     final middleIds = s.npcDestinations.keys.toSet();
     final reunion = s.roster.where(middleIds.contains).toList();
-    print('[$seed] ${ctx.school(s).name} destinations=${middleIds.length} reunion=${reunion.length} ${reunion.map((id) => 'g${s.npcs[id]!.grade}').toList()} memories=${s.memories.where((m) => m.reasonKey == 'reunited').length}');
+    print(
+      '[$seed] ${ctx.school(s).name} destinations=${middleIds.length} reunion=${reunion.length} ${reunion.map((id) => 'g${s.npcs[id]!.grade}').toList()} memories=${s.memories.where((m) => m.reasonKey == 'reunited').length}',
+    );
   }
 }

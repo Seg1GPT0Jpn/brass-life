@@ -301,6 +301,87 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('幹部選出: 役職と気持ちを選んで立候補できる', (tester) async {
+    final saves = InMemoryGameSaveRepository();
+    final world = const WorldGenerator().generate(
+      SeedCode.seedFromInput('TEST'),
+    );
+    final ctx = GameContext(world);
+    final tm = TimeManager(ctx);
+    var s = tm.newGame(world);
+    while (!(s.pending?.type == PendingEventType.executiveSelection &&
+        s.player.grade == 2)) {
+      s = s.pending != null
+          ? tm.autoResolve(s)
+          : tm.submitAction(s, WeeklyAction.partPractice);
+    }
+    await saves.save(
+      '1',
+      s,
+      SaveSummary(
+        slot: '1',
+        worldSeed: s.worldSeed,
+        seedCode: SeedCode.format(s.worldSeed),
+        playerName: s.player.fullName,
+        dateLabel: '',
+        schoolName: '',
+        savedAt: '',
+      ),
+    );
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final container = ProviderContainer(
+      overrides: [
+        worldMetaRepositoryProvider.overrideWithValue(
+          InMemoryWorldMetaRepository(),
+        ),
+        gameSaveRepositoryProvider.overrideWithValue(saves),
+      ],
+    );
+    addTearDown(container.dispose);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const BrassLifeApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.runAsync(() async {
+      await container.read(gameControllerProvider.notifier).load('1');
+    });
+    await tester.pumpAndSettle();
+    container.read(routerProvider).go('/game');
+    await tester.pumpAndSettle();
+
+    expect(find.text('イベント：新幹部の選出'), findsOneWidget);
+    await tester.tap(find.text('立候補する'));
+    await tester.pumpAndSettle();
+    expect(find.text('どの役職に立候補する？'), findsOneWidget);
+    await tester.tap(find.text('学生指揮'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('心の傷 +'), findsOneWidget);
+    // 気持ちを最大に
+    await tester.drag(find.byType(Slider), const Offset(600, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('なりたい気持ち：すべてを懸けてなりたい'), findsOneWidget);
+    final submit = find.text('「学生指揮」に立候補する');
+    await tester.ensureVisible(submit);
+    await tester.pumpAndSettle();
+    await tester.tap(submit);
+    await tester.pumpAndSettle();
+    expect(find.text('幹部選出'), findsWidgets);
+    final after = container.read(gameControllerProvider)!;
+    expect(after.choices.last, endsWith('executive:run:conductor:5'));
+    expect(
+      after.roles['player'] == ClubRole.conductor || after.player.heartache > 0,
+      isTrue,
+    );
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('エンディング: 6 年間を終えたセーブを読み込み、エンディングを表示', (tester) async {
     final saves = InMemoryGameSaveRepository();
     // 6 年間を自動で遊び終えた状態を用意する

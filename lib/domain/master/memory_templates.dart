@@ -29,6 +29,8 @@ const Map<String, String> memoryTemplates = {
       '{fiscalYear}年度 {contest} {stage}：客席から仲間を応援した（{award}{suffix}）',
   'appointed_role': '{actor}は{role}に選ばれた',
   'lost_election': '{actor}は立候補したが、{target}に及ばなかった',
+  'lost_role': '{actor}は{role}に立候補したが、{target}が選ばれた',
+  'lost_role_heartbreak': '{actor}は本気で{role}になりたかった。選ばれなかった悔しさは、簡単には消えなかった',
   'retired': '{actor}は部活を引退した',
   'concert_result': '{school}の定期演奏会に出演した（{rating}）',
   'concert_watched': '{school}の定期演奏会を見守った（{rating}）',

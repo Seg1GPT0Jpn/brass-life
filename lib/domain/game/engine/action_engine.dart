@@ -155,6 +155,8 @@ class ActionEngine {
           gain = gain * 8 ~/ 10;
         }
         if (p.hasTrait('hardworking')) gain = gain * 11 ~/ 10;
+        // 心の傷があると練習に身が入らない（最大で半減）。
+        gain = gain * (200 - p.heartache) ~/ 200;
         gain = gain < 0 ? 0 : gain;
         final musGain =
             (_baseMusicality(action) +
@@ -204,10 +206,14 @@ class ActionEngine {
       // 部長・代表は気苦労が多いが、顧問の信頼を得やすい。
       if (leads && inClub) stress += 2;
       if (p.hasTrait('optimistic')) stress -= 1;
-      final baseline = (60 + p.personality.conscientiousness ~/ 5).clamp(
-        30,
-        90,
-      );
+      // 心の傷が残っている間は、ストレスが下がりきらない。
+      if (stress < p.heartache ~/ 2) stress = p.heartache ~/ 2;
+      // 心の傷はやる気の戻る先そのものを下げる。
+      final baseline =
+          (60 + p.personality.conscientiousness ~/ 5 - p.heartache ~/ 2).clamp(
+            10,
+            90,
+          );
       var motivation = p.motivation + (baseline - p.motivation) ~/ 8;
       if (action == WeeklyAction.hangOut) motivation += 2;
       if (action.isPractice && rng.chance(4000)) motivation += 1;
@@ -246,6 +252,21 @@ class ActionEngine {
         social: social.clamp(0, 100),
         advisorTrust: trust.clamp(0, 100),
       );
+    }
+
+    // 心の傷はゆっくりとしか癒えない（週に 1。誰かと話す・遊ぶ・一息つくと少し早まる）。
+    if (p.heartache > 0) {
+      final comforted =
+          action == WeeklyAction.chat ||
+          action == WeeklyAction.hangOut ||
+          action == WeeklyAction.breather;
+      final healed = (p.heartache - 1 - (comforted ? 1 : 0)).clamp(0, 100);
+      if (healed == 0) {
+        lines.add('あの日の悔しさが、ようやく思い出に変わった。');
+      } else if (p.heartache >= 20 && s.turn % 4 == 0) {
+        lines.add('あの日の悔しさが、ふとした瞬間によみがえる。（心の傷 $healed）');
+      }
+      p = p.copyWith(heartache: healed);
     }
 
     // 定期テスト

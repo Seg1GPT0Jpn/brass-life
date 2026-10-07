@@ -1,2 +1,2 @@
 /// ビルドの表示用情報。
-const String appBuildLabel = 'v1.2（ジオラマのホーム画面と空間で選ぶ行動）';
+const String appBuildLabel = 'v1.3（役職への立候補と心の傷）';

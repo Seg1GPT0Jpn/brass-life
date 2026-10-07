@@ -170,6 +170,11 @@ abstract class PlayerState with _$PlayerState {
 
     /// 3 年生の引退済み。
     @Default(false) bool retired,
+
+    /// 心の傷（0..100）。役職に選ばれなかった悔しさなど。
+    /// やる気の基準値を下げ、ストレスが下がりきらなくなり、上達も鈍る。
+    /// 週に少しずつしか癒えない（雑談・遊び・一息つくと少し早まる）。
+    @Default(0) int heartache,
   }) = _PlayerState;
 
   const PlayerState._();

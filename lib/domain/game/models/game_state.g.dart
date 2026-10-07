@@ -150,6 +150,7 @@ const _$ClubRoleEnumMap = {
   ClubRole.treasurer: 'treasurer',
   ClubRole.gradeRep: 'gradeRep',
   ClubRole.viceRep: 'viceRep',
+  ClubRole.sectionLeader: 'sectionLeader',
   ClubRole.partLeader: 'partLeader',
 };
 
@@ -201,6 +202,7 @@ _PlayerState _$PlayerStateFromJson(Map<String, dynamic> json) => _PlayerState(
       ) ??
       const <String, int>{},
   retired: json['retired'] as bool? ?? false,
+  heartache: (json['heartache'] as num?)?.toInt() ?? 0,
 );
 
 Map<String, dynamic> _$PlayerStateToJson(
@@ -230,6 +232,7 @@ Map<String, dynamic> _$PlayerStateToJson(
   'termGrades': instance.termGrades.map((e) => e.toJson()).toList(),
   'actionCounts': instance.actionCounts,
   'retired': instance.retired,
+  'heartache': instance.heartache,
 };
 
 const _$GenderEnumMap = {Gender.female: 'female', Gender.male: 'male'};

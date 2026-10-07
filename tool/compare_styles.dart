@@ -16,7 +16,9 @@ void main(List<String> args) {
   for (final policy in MonthlyPolicy.values) {
     var s = tm.newGame(world).copyWith(policy: policy);
     for (var i = 0; i < 2000 && s.stage != GameStage.finished; i++) {
-      s = s.pending != null ? tm.autoResolve(s) : tm.submitAction(s, tm.actionForPolicy(s));
+      s = s.pending != null
+          ? tm.autoResolve(s)
+          : tm.submitAction(s, tm.actionForPolicy(s));
     }
     while (s.pending != null) {
       s = tm.autoResolve(s);
@@ -25,6 +27,8 @@ void main(List<String> args) {
     final high = ctx.index.schoolById[s.schoolHistory.last]!.name;
     final best = e.stats.firstWhere((x) => x.$1 == '最高成績').$2;
     final uni = e.stats.firstWhere((x) => x.$1 == '進路').$2;
-    print('【${policy.label}】高校=$high 熟練度=${s.player.skill} 学力=${s.player.academic} 最高成績=$best 進路=$uni 称号=「${e.title}」');
+    print(
+      '【${policy.label}】高校=$high 熟練度=${s.player.skill} 学力=${s.player.academic} 最高成績=$best 進路=$uni 称号=「${e.title}」',
+    );
   }
 }

@@ -2,6 +2,7 @@ import '../../entities/memory_tag.dart';
 import '../../entities/player.dart';
 import '../../entities/world.dart';
 import '../../value_objects/instrument.dart';
+import '../models/candidacy.dart';
 import '../models/game_enums.dart';
 import '../models/game_state.dart';
 import '../models/player_setup.dart';
@@ -175,11 +176,15 @@ class TimeManager {
   /// 幹部選出での意思を表明する。
   ({GameState state, List<String> lines}) resolveExecutive(
     GameState s,
-    CandidacyChoice choice,
+    Candidacy choice,
   ) {
     _expect(s, PendingEventType.executiveSelection);
+    if (choice.isRun &&
+        !ExecutiveEngine(ctx).runnableRoles(s).contains(choice.role)) {
+      throw ArgumentError('この部では「${choice.role!.label}」に立候補できない');
+    }
     final r = ExecutiveEngine(ctx).run(s, choice);
-    return _finishEvent(r.state, '幹部選出', r.lines, 'executive:${choice.name}');
+    return _finishEvent(r.state, '幹部選出', r.lines, 'executive:${choice.key}');
   }
 
   /// 定期演奏会にアプローチカードを選んで臨む。
@@ -290,7 +295,7 @@ class TimeManager {
       PendingEventType.contest => resolveContest(s, cardsOf(s).first).state,
       PendingEventType.executiveSelection => resolveExecutive(
         s,
-        CandidacyChoice.neutral,
+        const Candidacy.neutral(),
       ).state,
       PendingEventType.concert => resolveConcert(s, cardsOf(s).first).state,
       PendingEventType.recommendation => resolveRecommendation(

@@ -649,7 +649,10 @@ mixin _$PlayerState {
  List<ExamRecord> get exams;/// 学期ごとの評定（1..5）。内申点の算出に用いる。
  List<TermGrade> get termGrades;/// 行動の累計回数（エンディング解析に用いる）。
  Map<String, int> get actionCounts;/// 3 年生の引退済み。
- bool get retired;
+ bool get retired;/// 心の傷（0..100）。役職に選ばれなかった悔しさなど。
+/// やる気の基準値を下げ、ストレスが下がりきらなくなり、上達も鈍る。
+/// 週に少しずつしか癒えない（雑談・遊び・一息つくと少し早まる）。
+ int get heartache;
 /// Create a copy of PlayerState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -663,20 +666,20 @@ $PlayerStateCopyWith<PlayerState> get copyWith => _$PlayerStateCopyWithImpl<Play
 @override
 bool operator ==(Object other) {
   final _this = this as PlayerState;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlayerState&&(identical(other.familyName, _this.familyName) || other.familyName == _this.familyName)&&(identical(other.givenName, _this.givenName) || other.givenName == _this.givenName)&&(identical(other.gender, _this.gender) || other.gender == _this.gender)&&(identical(other.personality, _this.personality) || other.personality == _this.personality)&&const DeepCollectionEquality().equals(other.traits, _this.traits)&&(identical(other.aptitude, _this.aptitude) || other.aptitude == _this.aptitude)&&(identical(other.background, _this.background) || other.background == _this.background)&&(identical(other.grade, _this.grade) || other.grade == _this.grade)&&(identical(other.instrument, _this.instrument) || other.instrument == _this.instrument)&&(identical(other.skill, _this.skill) || other.skill == _this.skill)&&(identical(other.musicality, _this.musicality) || other.musicality == _this.musicality)&&(identical(other.academic, _this.academic) || other.academic == _this.academic)&&(identical(other.stamina, _this.stamina) || other.stamina == _this.stamina)&&(identical(other.fatigue, _this.fatigue) || other.fatigue == _this.fatigue)&&(identical(other.stress, _this.stress) || other.stress == _this.stress)&&(identical(other.motivation, _this.motivation) || other.motivation == _this.motivation)&&(identical(other.social, _this.social) || other.social == _this.social)&&(identical(other.advisorTrust, _this.advisorTrust) || other.advisorTrust == _this.advisorTrust)&&const DeepCollectionEquality().equals(other.wishes, _this.wishes)&&(identical(other.previousInstrument, _this.previousInstrument) || other.previousInstrument == _this.previousInstrument)&&const DeepCollectionEquality().equals(other.exams, _this.exams)&&const DeepCollectionEquality().equals(other.termGrades, _this.termGrades)&&const DeepCollectionEquality().equals(other.actionCounts, _this.actionCounts)&&(identical(other.retired, _this.retired) || other.retired == _this.retired));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlayerState&&(identical(other.familyName, _this.familyName) || other.familyName == _this.familyName)&&(identical(other.givenName, _this.givenName) || other.givenName == _this.givenName)&&(identical(other.gender, _this.gender) || other.gender == _this.gender)&&(identical(other.personality, _this.personality) || other.personality == _this.personality)&&const DeepCollectionEquality().equals(other.traits, _this.traits)&&(identical(other.aptitude, _this.aptitude) || other.aptitude == _this.aptitude)&&(identical(other.background, _this.background) || other.background == _this.background)&&(identical(other.grade, _this.grade) || other.grade == _this.grade)&&(identical(other.instrument, _this.instrument) || other.instrument == _this.instrument)&&(identical(other.skill, _this.skill) || other.skill == _this.skill)&&(identical(other.musicality, _this.musicality) || other.musicality == _this.musicality)&&(identical(other.academic, _this.academic) || other.academic == _this.academic)&&(identical(other.stamina, _this.stamina) || other.stamina == _this.stamina)&&(identical(other.fatigue, _this.fatigue) || other.fatigue == _this.fatigue)&&(identical(other.stress, _this.stress) || other.stress == _this.stress)&&(identical(other.motivation, _this.motivation) || other.motivation == _this.motivation)&&(identical(other.social, _this.social) || other.social == _this.social)&&(identical(other.advisorTrust, _this.advisorTrust) || other.advisorTrust == _this.advisorTrust)&&const DeepCollectionEquality().equals(other.wishes, _this.wishes)&&(identical(other.previousInstrument, _this.previousInstrument) || other.previousInstrument == _this.previousInstrument)&&const DeepCollectionEquality().equals(other.exams, _this.exams)&&const DeepCollectionEquality().equals(other.termGrades, _this.termGrades)&&const DeepCollectionEquality().equals(other.actionCounts, _this.actionCounts)&&(identical(other.retired, _this.retired) || other.retired == _this.retired)&&(identical(other.heartache, _this.heartache) || other.heartache == _this.heartache));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as PlayerState;
-  return Object.hashAll([runtimeType,_this.familyName,_this.givenName,_this.gender,_this.personality,const DeepCollectionEquality().hash(_this.traits),_this.aptitude,_this.background,_this.grade,_this.instrument,_this.skill,_this.musicality,_this.academic,_this.stamina,_this.fatigue,_this.stress,_this.motivation,_this.social,_this.advisorTrust,const DeepCollectionEquality().hash(_this.wishes),_this.previousInstrument,const DeepCollectionEquality().hash(_this.exams),const DeepCollectionEquality().hash(_this.termGrades),const DeepCollectionEquality().hash(_this.actionCounts),_this.retired]);
+  return Object.hashAll([runtimeType,_this.familyName,_this.givenName,_this.gender,_this.personality,const DeepCollectionEquality().hash(_this.traits),_this.aptitude,_this.background,_this.grade,_this.instrument,_this.skill,_this.musicality,_this.academic,_this.stamina,_this.fatigue,_this.stress,_this.motivation,_this.social,_this.advisorTrust,const DeepCollectionEquality().hash(_this.wishes),_this.previousInstrument,const DeepCollectionEquality().hash(_this.exams),const DeepCollectionEquality().hash(_this.termGrades),const DeepCollectionEquality().hash(_this.actionCounts),_this.retired,_this.heartache]);
 }
 
 @override
 String toString() {
   final _this = this as PlayerState;
-  return 'PlayerState(familyName: ${_this.familyName}, givenName: ${_this.givenName}, gender: ${_this.gender}, personality: ${_this.personality}, traits: ${_this.traits}, aptitude: ${_this.aptitude}, background: ${_this.background}, grade: ${_this.grade}, instrument: ${_this.instrument}, skill: ${_this.skill}, musicality: ${_this.musicality}, academic: ${_this.academic}, stamina: ${_this.stamina}, fatigue: ${_this.fatigue}, stress: ${_this.stress}, motivation: ${_this.motivation}, social: ${_this.social}, advisorTrust: ${_this.advisorTrust}, wishes: ${_this.wishes}, previousInstrument: ${_this.previousInstrument}, exams: ${_this.exams}, termGrades: ${_this.termGrades}, actionCounts: ${_this.actionCounts}, retired: ${_this.retired})';
+  return 'PlayerState(familyName: ${_this.familyName}, givenName: ${_this.givenName}, gender: ${_this.gender}, personality: ${_this.personality}, traits: ${_this.traits}, aptitude: ${_this.aptitude}, background: ${_this.background}, grade: ${_this.grade}, instrument: ${_this.instrument}, skill: ${_this.skill}, musicality: ${_this.musicality}, academic: ${_this.academic}, stamina: ${_this.stamina}, fatigue: ${_this.fatigue}, stress: ${_this.stress}, motivation: ${_this.motivation}, social: ${_this.social}, advisorTrust: ${_this.advisorTrust}, wishes: ${_this.wishes}, previousInstrument: ${_this.previousInstrument}, exams: ${_this.exams}, termGrades: ${_this.termGrades}, actionCounts: ${_this.actionCounts}, retired: ${_this.retired}, heartache: ${_this.heartache})';
 }
 
 
@@ -687,7 +690,7 @@ abstract mixin class $PlayerStateCopyWith<$Res>  {
   factory $PlayerStateCopyWith(PlayerState value, $Res Function(PlayerState) _then) = _$PlayerStateCopyWithImpl;
 @useResult
 $Res call({
- String familyName, String givenName, Gender gender, PersonalityAxes personality, List<TraitTag> traits, AptitudeStats aptitude, MusicBackground background, int grade, InstrumentType? instrument, int skill, int musicality, int academic, int stamina, int fatigue, int stress, int motivation, int social, int advisorTrust, List<InstrumentType> wishes, InstrumentType? previousInstrument, List<ExamRecord> exams, List<TermGrade> termGrades, Map<String, int> actionCounts, bool retired
+ String familyName, String givenName, Gender gender, PersonalityAxes personality, List<TraitTag> traits, AptitudeStats aptitude, MusicBackground background, int grade, InstrumentType? instrument, int skill, int musicality, int academic, int stamina, int fatigue, int stress, int motivation, int social, int advisorTrust, List<InstrumentType> wishes, InstrumentType? previousInstrument, List<ExamRecord> exams, List<TermGrade> termGrades, Map<String, int> actionCounts, bool retired, int heartache
 });
 
 
@@ -704,7 +707,7 @@ class _$PlayerStateCopyWithImpl<$Res>
 
 /// Create a copy of PlayerState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? familyName = null,Object? givenName = null,Object? gender = null,Object? personality = null,Object? traits = null,Object? aptitude = null,Object? background = null,Object? grade = null,Object? instrument = freezed,Object? skill = null,Object? musicality = null,Object? academic = null,Object? stamina = null,Object? fatigue = null,Object? stress = null,Object? motivation = null,Object? social = null,Object? advisorTrust = null,Object? wishes = null,Object? previousInstrument = freezed,Object? exams = null,Object? termGrades = null,Object? actionCounts = null,Object? retired = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? familyName = null,Object? givenName = null,Object? gender = null,Object? personality = null,Object? traits = null,Object? aptitude = null,Object? background = null,Object? grade = null,Object? instrument = freezed,Object? skill = null,Object? musicality = null,Object? academic = null,Object? stamina = null,Object? fatigue = null,Object? stress = null,Object? motivation = null,Object? social = null,Object? advisorTrust = null,Object? wishes = null,Object? previousInstrument = freezed,Object? exams = null,Object? termGrades = null,Object? actionCounts = null,Object? retired = null,Object? heartache = null,}) {
   return _then(PlayerState(
 familyName: null == familyName ? _self.familyName : familyName // ignore: cast_nullable_to_non_nullable
 as String,givenName: null == givenName ? _self.givenName : givenName // ignore: cast_nullable_to_non_nullable
@@ -730,7 +733,8 @@ as InstrumentType?,exams: null == exams ? _self.exams : exams // ignore: cast_nu
 as List<ExamRecord>,termGrades: null == termGrades ? _self.termGrades : termGrades // ignore: cast_nullable_to_non_nullable
 as List<TermGrade>,actionCounts: null == actionCounts ? _self.actionCounts : actionCounts // ignore: cast_nullable_to_non_nullable
 as Map<String, int>,retired: null == retired ? _self.retired : retired // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,heartache: null == heartache ? _self.heartache : heartache // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 /// Create a copy of PlayerState
@@ -833,10 +837,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String familyName,  String givenName,  Gender gender,  PersonalityAxes personality,  List<TraitTag> traits,  AptitudeStats aptitude,  MusicBackground background,  int grade,  InstrumentType? instrument,  int skill,  int musicality,  int academic,  int stamina,  int fatigue,  int stress,  int motivation,  int social,  int advisorTrust,  List<InstrumentType> wishes,  InstrumentType? previousInstrument,  List<ExamRecord> exams,  List<TermGrade> termGrades,  Map<String, int> actionCounts,  bool retired)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String familyName,  String givenName,  Gender gender,  PersonalityAxes personality,  List<TraitTag> traits,  AptitudeStats aptitude,  MusicBackground background,  int grade,  InstrumentType? instrument,  int skill,  int musicality,  int academic,  int stamina,  int fatigue,  int stress,  int motivation,  int social,  int advisorTrust,  List<InstrumentType> wishes,  InstrumentType? previousInstrument,  List<ExamRecord> exams,  List<TermGrade> termGrades,  Map<String, int> actionCounts,  bool retired,  int heartache)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PlayerState() when $default != null:
-return $default(_that.familyName,_that.givenName,_that.gender,_that.personality,_that.traits,_that.aptitude,_that.background,_that.grade,_that.instrument,_that.skill,_that.musicality,_that.academic,_that.stamina,_that.fatigue,_that.stress,_that.motivation,_that.social,_that.advisorTrust,_that.wishes,_that.previousInstrument,_that.exams,_that.termGrades,_that.actionCounts,_that.retired);case _:
+return $default(_that.familyName,_that.givenName,_that.gender,_that.personality,_that.traits,_that.aptitude,_that.background,_that.grade,_that.instrument,_that.skill,_that.musicality,_that.academic,_that.stamina,_that.fatigue,_that.stress,_that.motivation,_that.social,_that.advisorTrust,_that.wishes,_that.previousInstrument,_that.exams,_that.termGrades,_that.actionCounts,_that.retired,_that.heartache);case _:
   return orElse();
 
 }
@@ -854,10 +858,10 @@ return $default(_that.familyName,_that.givenName,_that.gender,_that.personality,
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String familyName,  String givenName,  Gender gender,  PersonalityAxes personality,  List<TraitTag> traits,  AptitudeStats aptitude,  MusicBackground background,  int grade,  InstrumentType? instrument,  int skill,  int musicality,  int academic,  int stamina,  int fatigue,  int stress,  int motivation,  int social,  int advisorTrust,  List<InstrumentType> wishes,  InstrumentType? previousInstrument,  List<ExamRecord> exams,  List<TermGrade> termGrades,  Map<String, int> actionCounts,  bool retired)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String familyName,  String givenName,  Gender gender,  PersonalityAxes personality,  List<TraitTag> traits,  AptitudeStats aptitude,  MusicBackground background,  int grade,  InstrumentType? instrument,  int skill,  int musicality,  int academic,  int stamina,  int fatigue,  int stress,  int motivation,  int social,  int advisorTrust,  List<InstrumentType> wishes,  InstrumentType? previousInstrument,  List<ExamRecord> exams,  List<TermGrade> termGrades,  Map<String, int> actionCounts,  bool retired,  int heartache)  $default,) {final _that = this;
 switch (_that) {
 case _PlayerState():
-return $default(_that.familyName,_that.givenName,_that.gender,_that.personality,_that.traits,_that.aptitude,_that.background,_that.grade,_that.instrument,_that.skill,_that.musicality,_that.academic,_that.stamina,_that.fatigue,_that.stress,_that.motivation,_that.social,_that.advisorTrust,_that.wishes,_that.previousInstrument,_that.exams,_that.termGrades,_that.actionCounts,_that.retired);case _:
+return $default(_that.familyName,_that.givenName,_that.gender,_that.personality,_that.traits,_that.aptitude,_that.background,_that.grade,_that.instrument,_that.skill,_that.musicality,_that.academic,_that.stamina,_that.fatigue,_that.stress,_that.motivation,_that.social,_that.advisorTrust,_that.wishes,_that.previousInstrument,_that.exams,_that.termGrades,_that.actionCounts,_that.retired,_that.heartache);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -874,10 +878,10 @@ return $default(_that.familyName,_that.givenName,_that.gender,_that.personality,
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String familyName,  String givenName,  Gender gender,  PersonalityAxes personality,  List<TraitTag> traits,  AptitudeStats aptitude,  MusicBackground background,  int grade,  InstrumentType? instrument,  int skill,  int musicality,  int academic,  int stamina,  int fatigue,  int stress,  int motivation,  int social,  int advisorTrust,  List<InstrumentType> wishes,  InstrumentType? previousInstrument,  List<ExamRecord> exams,  List<TermGrade> termGrades,  Map<String, int> actionCounts,  bool retired)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String familyName,  String givenName,  Gender gender,  PersonalityAxes personality,  List<TraitTag> traits,  AptitudeStats aptitude,  MusicBackground background,  int grade,  InstrumentType? instrument,  int skill,  int musicality,  int academic,  int stamina,  int fatigue,  int stress,  int motivation,  int social,  int advisorTrust,  List<InstrumentType> wishes,  InstrumentType? previousInstrument,  List<ExamRecord> exams,  List<TermGrade> termGrades,  Map<String, int> actionCounts,  bool retired,  int heartache)?  $default,) {final _that = this;
 switch (_that) {
 case _PlayerState() when $default != null:
-return $default(_that.familyName,_that.givenName,_that.gender,_that.personality,_that.traits,_that.aptitude,_that.background,_that.grade,_that.instrument,_that.skill,_that.musicality,_that.academic,_that.stamina,_that.fatigue,_that.stress,_that.motivation,_that.social,_that.advisorTrust,_that.wishes,_that.previousInstrument,_that.exams,_that.termGrades,_that.actionCounts,_that.retired);case _:
+return $default(_that.familyName,_that.givenName,_that.gender,_that.personality,_that.traits,_that.aptitude,_that.background,_that.grade,_that.instrument,_that.skill,_that.musicality,_that.academic,_that.stamina,_that.fatigue,_that.stress,_that.motivation,_that.social,_that.advisorTrust,_that.wishes,_that.previousInstrument,_that.exams,_that.termGrades,_that.actionCounts,_that.retired,_that.heartache);case _:
   return null;
 
 }
@@ -889,7 +893,7 @@ return $default(_that.familyName,_that.givenName,_that.gender,_that.personality,
 @JsonSerializable()
 
 class _PlayerState extends PlayerState {
-  const _PlayerState({required this.familyName, required this.givenName, required this.gender, required this.personality, required  List<TraitTag> traits, required this.aptitude, required this.background, required this.grade, this.instrument, this.skill = 0, this.musicality = 100, required this.academic, required this.stamina, this.fatigue = 10, this.stress = 10, this.motivation = 60, this.social = 30, this.advisorTrust = 50,  List<InstrumentType> wishes = const <InstrumentType>[], this.previousInstrument,  List<ExamRecord> exams = const <ExamRecord>[],  List<TermGrade> termGrades = const <TermGrade>[],  Map<String, int> actionCounts = const <String, int>{}, this.retired = false}): _traits = traits,_wishes = wishes,_exams = exams,_termGrades = termGrades,_actionCounts = actionCounts,super._();
+  const _PlayerState({required this.familyName, required this.givenName, required this.gender, required this.personality, required  List<TraitTag> traits, required this.aptitude, required this.background, required this.grade, this.instrument, this.skill = 0, this.musicality = 100, required this.academic, required this.stamina, this.fatigue = 10, this.stress = 10, this.motivation = 60, this.social = 30, this.advisorTrust = 50,  List<InstrumentType> wishes = const <InstrumentType>[], this.previousInstrument,  List<ExamRecord> exams = const <ExamRecord>[],  List<TermGrade> termGrades = const <TermGrade>[],  Map<String, int> actionCounts = const <String, int>{}, this.retired = false, this.heartache = 0}): _traits = traits,_wishes = wishes,_exams = exams,_termGrades = termGrades,_actionCounts = actionCounts,super._();
   factory _PlayerState.fromJson(Map<String, dynamic> json) => _$PlayerStateFromJson(json);
 
 @override final  String familyName;
@@ -966,6 +970,10 @@ class _PlayerState extends PlayerState {
 
 /// 3 年生の引退済み。
 @override@JsonKey() final  bool retired;
+/// 心の傷（0..100）。役職に選ばれなかった悔しさなど。
+/// やる気の基準値を下げ、ストレスが下がりきらなくなり、上達も鈍る。
+/// 週に少しずつしか癒えない（雑談・遊び・一息つくと少し早まる）。
+@override@JsonKey() final  int heartache;
 
 /// Create a copy of PlayerState
 /// with the given fields replaced by the non-null parameter values.
@@ -980,18 +988,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PlayerState&&(identical(other.familyName, familyName) || other.familyName == familyName)&&(identical(other.givenName, givenName) || other.givenName == givenName)&&(identical(other.gender, gender) || other.gender == gender)&&(identical(other.personality, personality) || other.personality == personality)&&const DeepCollectionEquality().equals(other.traits, _traits)&&(identical(other.aptitude, aptitude) || other.aptitude == aptitude)&&(identical(other.background, background) || other.background == background)&&(identical(other.grade, grade) || other.grade == grade)&&(identical(other.instrument, instrument) || other.instrument == instrument)&&(identical(other.skill, skill) || other.skill == skill)&&(identical(other.musicality, musicality) || other.musicality == musicality)&&(identical(other.academic, academic) || other.academic == academic)&&(identical(other.stamina, stamina) || other.stamina == stamina)&&(identical(other.fatigue, fatigue) || other.fatigue == fatigue)&&(identical(other.stress, stress) || other.stress == stress)&&(identical(other.motivation, motivation) || other.motivation == motivation)&&(identical(other.social, social) || other.social == social)&&(identical(other.advisorTrust, advisorTrust) || other.advisorTrust == advisorTrust)&&const DeepCollectionEquality().equals(other.wishes, _wishes)&&(identical(other.previousInstrument, previousInstrument) || other.previousInstrument == previousInstrument)&&const DeepCollectionEquality().equals(other.exams, _exams)&&const DeepCollectionEquality().equals(other.termGrades, _termGrades)&&const DeepCollectionEquality().equals(other.actionCounts, _actionCounts)&&(identical(other.retired, retired) || other.retired == retired));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PlayerState&&(identical(other.familyName, familyName) || other.familyName == familyName)&&(identical(other.givenName, givenName) || other.givenName == givenName)&&(identical(other.gender, gender) || other.gender == gender)&&(identical(other.personality, personality) || other.personality == personality)&&const DeepCollectionEquality().equals(other.traits, _traits)&&(identical(other.aptitude, aptitude) || other.aptitude == aptitude)&&(identical(other.background, background) || other.background == background)&&(identical(other.grade, grade) || other.grade == grade)&&(identical(other.instrument, instrument) || other.instrument == instrument)&&(identical(other.skill, skill) || other.skill == skill)&&(identical(other.musicality, musicality) || other.musicality == musicality)&&(identical(other.academic, academic) || other.academic == academic)&&(identical(other.stamina, stamina) || other.stamina == stamina)&&(identical(other.fatigue, fatigue) || other.fatigue == fatigue)&&(identical(other.stress, stress) || other.stress == stress)&&(identical(other.motivation, motivation) || other.motivation == motivation)&&(identical(other.social, social) || other.social == social)&&(identical(other.advisorTrust, advisorTrust) || other.advisorTrust == advisorTrust)&&const DeepCollectionEquality().equals(other.wishes, _wishes)&&(identical(other.previousInstrument, previousInstrument) || other.previousInstrument == previousInstrument)&&const DeepCollectionEquality().equals(other.exams, _exams)&&const DeepCollectionEquality().equals(other.termGrades, _termGrades)&&const DeepCollectionEquality().equals(other.actionCounts, _actionCounts)&&(identical(other.retired, retired) || other.retired == retired)&&(identical(other.heartache, heartache) || other.heartache == heartache));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hashAll([runtimeType,familyName,givenName,gender,personality,const DeepCollectionEquality().hash(_traits),aptitude,background,grade,instrument,skill,musicality,academic,stamina,fatigue,stress,motivation,social,advisorTrust,const DeepCollectionEquality().hash(_wishes),previousInstrument,const DeepCollectionEquality().hash(_exams),const DeepCollectionEquality().hash(_termGrades),const DeepCollectionEquality().hash(_actionCounts),retired]);
+    return Object.hashAll([runtimeType,familyName,givenName,gender,personality,const DeepCollectionEquality().hash(_traits),aptitude,background,grade,instrument,skill,musicality,academic,stamina,fatigue,stress,motivation,social,advisorTrust,const DeepCollectionEquality().hash(_wishes),previousInstrument,const DeepCollectionEquality().hash(_exams),const DeepCollectionEquality().hash(_termGrades),const DeepCollectionEquality().hash(_actionCounts),retired,heartache]);
 }
 
 @override
 String toString() {
-    return 'PlayerState(familyName: $familyName, givenName: $givenName, gender: $gender, personality: $personality, traits: $traits, aptitude: $aptitude, background: $background, grade: $grade, instrument: $instrument, skill: $skill, musicality: $musicality, academic: $academic, stamina: $stamina, fatigue: $fatigue, stress: $stress, motivation: $motivation, social: $social, advisorTrust: $advisorTrust, wishes: $wishes, previousInstrument: $previousInstrument, exams: $exams, termGrades: $termGrades, actionCounts: $actionCounts, retired: $retired)';
+    return 'PlayerState(familyName: $familyName, givenName: $givenName, gender: $gender, personality: $personality, traits: $traits, aptitude: $aptitude, background: $background, grade: $grade, instrument: $instrument, skill: $skill, musicality: $musicality, academic: $academic, stamina: $stamina, fatigue: $fatigue, stress: $stress, motivation: $motivation, social: $social, advisorTrust: $advisorTrust, wishes: $wishes, previousInstrument: $previousInstrument, exams: $exams, termGrades: $termGrades, actionCounts: $actionCounts, retired: $retired, heartache: $heartache)';
 }
 
 
@@ -1002,7 +1010,7 @@ abstract mixin class _$PlayerStateCopyWith<$Res> implements $PlayerStateCopyWith
   factory _$PlayerStateCopyWith(_PlayerState value, $Res Function(_PlayerState) _then) = __$PlayerStateCopyWithImpl;
 @override @useResult
 $Res call({
- String familyName, String givenName, Gender gender, PersonalityAxes personality, List<TraitTag> traits, AptitudeStats aptitude, MusicBackground background, int grade, InstrumentType? instrument, int skill, int musicality, int academic, int stamina, int fatigue, int stress, int motivation, int social, int advisorTrust, List<InstrumentType> wishes, InstrumentType? previousInstrument, List<ExamRecord> exams, List<TermGrade> termGrades, Map<String, int> actionCounts, bool retired
+ String familyName, String givenName, Gender gender, PersonalityAxes personality, List<TraitTag> traits, AptitudeStats aptitude, MusicBackground background, int grade, InstrumentType? instrument, int skill, int musicality, int academic, int stamina, int fatigue, int stress, int motivation, int social, int advisorTrust, List<InstrumentType> wishes, InstrumentType? previousInstrument, List<ExamRecord> exams, List<TermGrade> termGrades, Map<String, int> actionCounts, bool retired, int heartache
 });
 
 
@@ -1019,7 +1027,7 @@ class __$PlayerStateCopyWithImpl<$Res>
 
 /// Create a copy of PlayerState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? familyName = null,Object? givenName = null,Object? gender = null,Object? personality = null,Object? traits = null,Object? aptitude = null,Object? background = null,Object? grade = null,Object? instrument = freezed,Object? skill = null,Object? musicality = null,Object? academic = null,Object? stamina = null,Object? fatigue = null,Object? stress = null,Object? motivation = null,Object? social = null,Object? advisorTrust = null,Object? wishes = null,Object? previousInstrument = freezed,Object? exams = null,Object? termGrades = null,Object? actionCounts = null,Object? retired = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? familyName = null,Object? givenName = null,Object? gender = null,Object? personality = null,Object? traits = null,Object? aptitude = null,Object? background = null,Object? grade = null,Object? instrument = freezed,Object? skill = null,Object? musicality = null,Object? academic = null,Object? stamina = null,Object? fatigue = null,Object? stress = null,Object? motivation = null,Object? social = null,Object? advisorTrust = null,Object? wishes = null,Object? previousInstrument = freezed,Object? exams = null,Object? termGrades = null,Object? actionCounts = null,Object? retired = null,Object? heartache = null,}) {
   return _then(_PlayerState(
 familyName: null == familyName ? _self.familyName : familyName // ignore: cast_nullable_to_non_nullable
 as String,givenName: null == givenName ? _self.givenName : givenName // ignore: cast_nullable_to_non_nullable
@@ -1045,7 +1053,8 @@ as InstrumentType?,exams: null == exams ? _self._exams : exams // ignore: cast_n
 as List<ExamRecord>,termGrades: null == termGrades ? _self._termGrades : termGrades // ignore: cast_nullable_to_non_nullable
 as List<TermGrade>,actionCounts: null == actionCounts ? _self._actionCounts : actionCounts // ignore: cast_nullable_to_non_nullable
 as Map<String, int>,retired: null == retired ? _self.retired : retired // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,heartache: null == heartache ? _self.heartache : heartache // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 
