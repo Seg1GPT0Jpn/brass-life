@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app/app.dart';
 import 'app/providers.dart';
 import 'data/datasources/hive/hive_store.dart';
+import 'data/repositories/hive_game_save_repository.dart';
 import 'data/repositories/hive_world_meta_repository.dart';
 
 Future<void> main() async {
@@ -23,6 +24,9 @@ Future<void> main() async {
       overrides: [
         worldMetaRepositoryProvider.overrideWithValue(
           HiveWorldMetaRepository(HiveStore.worldMeta),
+        ),
+        gameSaveRepositoryProvider.overrideWithValue(
+          HiveGameSaveRepository(HiveStore.gameSaves),
         ),
       ],
       child: const BrassLifeApp(),

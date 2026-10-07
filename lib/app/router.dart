@@ -8,6 +8,8 @@ import '../presentation/debug/school_detail/school_detail_page.dart';
 import '../presentation/debug/school_list/school_list_page.dart';
 import '../presentation/debug/shell/debug_shell.dart';
 import '../presentation/debug/world_overview/overview_page.dart';
+import '../presentation/game/game_controller.dart';
+import '../presentation/game/game_page.dart';
 import '../presentation/title/title_page.dart';
 import '../presentation/world/world_controller.dart';
 
@@ -18,10 +20,13 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final hasWorld = ref.read(worldControllerProvider).value != null;
       if (!hasWorld && state.matchedLocation.startsWith('/debug')) return '/';
+      final hasGame = ref.read(gameControllerProvider) != null;
+      if (!hasGame && state.matchedLocation.startsWith('/game')) return '/';
       return null;
     },
     routes: [
       GoRoute(path: '/', builder: (_, _) => const TitlePage()),
+      GoRoute(path: '/game', builder: (_, _) => const GamePage()),
       StatefulShellRoute.indexedStack(
         builder: (_, _, shell) => DebugShell(navigationShell: shell),
         branches: [

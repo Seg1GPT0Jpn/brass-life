@@ -1,8 +1,10 @@
 import 'package:brass_life/app/app.dart';
 import 'package:brass_life/app/providers.dart';
 import 'package:brass_life/app/router.dart';
+import 'package:brass_life/data/repositories/hive_game_save_repository.dart';
 import 'package:brass_life/data/repositories/hive_world_meta_repository.dart';
 import 'package:brass_life/domain/value_objects/person_enums.dart';
+import 'package:brass_life/presentation/game/game_controller.dart';
 import 'package:brass_life/presentation/world/world_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,6 +20,9 @@ void main() {
       overrides: [
         worldMetaRepositoryProvider.overrideWithValue(
           InMemoryWorldMetaRepository(),
+        ),
+        gameSaveRepositoryProvider.overrideWithValue(
+          InMemoryGameSaveRepository(),
         ),
       ],
     );
@@ -39,13 +44,13 @@ void main() {
     testWidgets('$label: 生成から全画面の表示まで', (tester) async {
       final container = await pumpApp(tester, size);
 
-      expect(find.text('世界を生成'), findsOneWidget);
+      expect(find.text('この Seed で人生を始める'), findsOneWidget);
       await tester.enterText(find.byType(TextField), 'TEST');
       await tester.pump();
       expect(find.textContaining('シードコード:'), findsOneWidget);
 
       await tester.runAsync(() async {
-        await tester.tap(find.text('世界を生成'));
+        await tester.tap(find.text('世界を生成して中身を見る（デバッグ）'));
         await Future<void>.delayed(const Duration(milliseconds: 600));
       });
       await tester.pumpAndSettle();
@@ -108,4 +113,41 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('ゲーム: 人生を始める → 楽器決定 → 行動 → 月スキップ', (tester) async {
+    final container = await pumpApp(tester, const Size(1280, 900));
+    await tester.enterText(find.byType(TextField), 'TEST');
+    await tester.pump();
+    await tester.runAsync(() async {
+      await tester.tap(find.text('この Seed で人生を始める'));
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+    });
+    await tester.pumpAndSettle();
+    expect(container.read(gameControllerProvider), isNotNull);
+    expect(find.text('今週の行動'), findsOneWidget);
+
+    await tester.tap(find.textContaining('で1週間を過ごす'));
+    await tester.pumpAndSettle();
+    expect(find.text('イベント：担当楽器の決定'), findsOneWidget);
+
+    await tester.tap(find.textContaining('トランペット').first);
+    await tester.pump();
+    await tester.tap(find.text('希望を提出する'));
+    await tester.pumpAndSettle();
+    expect(find.text('楽器決定'), findsWidgets);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    final s = container.read(gameControllerProvider)!;
+    expect(s.player.instrument, isNotNull);
+
+    await tester.tap(find.text('月末までスキップ（イベントで停止）'));
+    await tester.pumpAndSettle();
+    expect(container.read(gameControllerProvider)!.turn, greaterThan(s.turn));
+
+    for (final tab in ['部員', '記録', 'ホーム']) {
+      await tester.tap(find.text(tab));
+      await tester.pumpAndSettle();
+    }
+    expect(tester.takeException(), isNull);
+  });
 }

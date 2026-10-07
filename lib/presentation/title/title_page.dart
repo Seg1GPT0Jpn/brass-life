@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app/app_info.dart';
+import '../game/game_controller.dart';
 import '../world/world_controller.dart';
 import 'title_view_model.dart';
 
@@ -21,10 +23,31 @@ class _TitlePageState extends ConsumerState<TitlePage> {
     super.dispose();
   }
 
+  /// 世界を生成してデバッグ表示へ。
   Future<void> _generate() async {
     final ok = await ref.read(titleViewModelProvider.notifier).generate();
     _controller.text = ref.read(titleViewModelProvider).input;
     if (ok && mounted) context.go('/debug/overview');
+  }
+
+  /// 世界を生成して新しい人生を始める。
+  Future<void> _startLife() async {
+    final ok = await ref.read(titleViewModelProvider.notifier).generate();
+    _controller.text = ref.read(titleViewModelProvider).input;
+    if (!ok || !mounted) return;
+    ref.read(gameControllerProvider.notifier).newGame();
+    context.go('/game');
+  }
+
+  Future<void> _load(String slot) async {
+    final error = await ref.read(gameControllerProvider.notifier).load(slot);
+    if (!mounted) return;
+    if (error != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error)));
+      return;
+    }
+    context.go('/game');
   }
 
   void _useSeed(String text) {
@@ -37,6 +60,8 @@ class _TitlePageState extends ConsumerState<TitlePage> {
     final vm = ref.watch(titleViewModelProvider);
     final world = ref.watch(worldControllerProvider);
     final recent = ref.watch(recentWorldsProvider);
+    final saves = ref.watch(saveListProvider);
+    final game = ref.watch(gameControllerProvider);
     final theme = Theme.of(context);
     final loading = world.isLoading;
 
@@ -102,14 +127,20 @@ class _TitlePageState extends ConsumerState<TitlePage> {
                   ),
                   const SizedBox(height: 16),
                   FilledButton.icon(
-                    onPressed: loading ? null : _generate,
+                    onPressed: loading ? null : _startLife,
                     icon: loading
                         ? const SizedBox.square(
                             dimension: 18,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Icon(Icons.public),
-                    label: Text(loading ? '世界を生成中…' : '世界を生成'),
+                        : const Icon(Icons.play_arrow),
+                    label: Text(loading ? '世界を生成中…' : 'この Seed で人生を始める'),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: loading ? null : _generate,
+                    icon: const Icon(Icons.public),
+                    label: const Text('世界を生成して中身を見る（デバッグ）'),
                   ),
                   if (world.hasError) ...[
                     const SizedBox(height: 12),
@@ -126,6 +157,47 @@ class _TitlePageState extends ConsumerState<TitlePage> {
                       label: Text('生成済みの世界を見る（${world.value!.meta.seedCode}）'),
                     ),
                   ],
+                  if (game != null) ...[
+                    const SizedBox(height: 8),
+                    FilledButton.tonalIcon(
+                      onPressed: () => context.go('/game'),
+                      icon: const Icon(Icons.arrow_forward),
+                      label: Text('プレイ中の人生に戻る（${game.player.fullName}）'),
+                    ),
+                  ],
+                  const SizedBox(height: 32),
+                  Text('続きから', style: theme.textTheme.titleSmall),
+                  const SizedBox(height: 8),
+                  saves.when(
+                    data: (list) => list.isEmpty
+                        ? Text('セーブデータはありません', style: theme.textTheme.bodySmall)
+                        : Column(
+                            children: [
+                              for (final sv in list)
+                                Card(
+                                  child: ListTile(
+                                    leading: Icon(
+                                      sv.slot == 'auto'
+                                          ? Icons.autorenew
+                                          : Icons.save,
+                                    ),
+                                    title: Text(
+                                      '${sv.slot == 'auto' ? 'オートセーブ' : 'スロット ${sv.slot}'}：'
+                                      '${sv.playerName}',
+                                    ),
+                                    subtitle: Text(
+                                      '${sv.dateLabel} ／ ${sv.schoolName} ／ ${sv.seedCode}',
+                                    ),
+                                    onTap: loading
+                                        ? null
+                                        : () => _load(sv.slot),
+                                  ),
+                                ),
+                            ],
+                          ),
+                    loading: () => const LinearProgressIndicator(),
+                    error: (e, _) => Text('読み込み失敗: $e'),
+                  ),
                   const SizedBox(height: 32),
                   Text('最近の Seed', style: theme.textTheme.titleSmall),
                   const SizedBox(height: 8),
@@ -155,7 +227,7 @@ class _TitlePageState extends ConsumerState<TitlePage> {
                   ),
                   const SizedBox(height: 32),
                   Text(
-                    'Phase 1: 世界・NPC 生成の確認用ビルド',
+                    appBuildLabel,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: theme.colorScheme.outline,
