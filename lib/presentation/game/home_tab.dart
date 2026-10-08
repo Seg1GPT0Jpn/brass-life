@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../domain/game/engine/contest_engine.dart';
+import '../../domain/game/engine/piece_selection.dart';
 import '../../domain/game/engine/school_calendar.dart';
 import '../../domain/game/models/game_enums.dart';
 import '../../domain/game/models/game_state.dart';
@@ -14,6 +15,7 @@ import 'game_controller.dart';
 import 'event_panels.dart';
 import 'exam_panels.dart';
 import 'instrument_decision_panel.dart';
+import 'pieces/piece_selection_panel.dart';
 import 'scene/action_sheets.dart';
 import 'scene/ambient_audio.dart';
 import 'scene/diorama_view.dart';
@@ -46,6 +48,8 @@ class HomeTab extends ConsumerWidget {
         const ApplicationPanel(),
       GameState(pending: PendingEvent(type: PendingEventType.notice)) =>
         const NoticePanel(),
+      GameState(pending: PendingEvent(type: PendingEventType.pieceSelection)) =>
+        const PieceSelectionPanel(),
       GameState(pending: PendingEvent(:final type)) => CardEventPanel(
         type: type,
       ),
@@ -125,6 +129,12 @@ class _StatusCard extends ConsumerWidget {
               'コンクール',
               '${s.contestMembers.contains('player') ? (s.soloistId == 'player' ? 'メンバー（ソリスト）' : 'メンバー') : 'B組（応援）'}'
                   '${s.contest!.nextStage == null ? ' ／ 今年の日程は終了' : ' ／ 次: ${nextContestLabel(ContestEngine(ctx), s.contest!.fiscalYear, s.contest!.nextStage)}'}',
+            ),
+          if (PieceSelection(ctx).currentOf(s) case final piece?)
+            KvRow(
+              '課題曲',
+              '${piece.category}「${piece.title}」',
+              onTap: () => context.push('/game/pieces'),
             ),
           if (p.instrument != null)
             ValueBar(label: '熟練度', value: p.skill, max: 1000),

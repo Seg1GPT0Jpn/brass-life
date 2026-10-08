@@ -69,6 +69,11 @@ _GameState _$GameStateFromJson(Map<String, dynamic> json) => _GameState(
           ?.map((e) => Achievement.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const <Achievement>[],
+  setPieces:
+      (json['setPieces'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, e as String),
+      ) ??
+      const <String, String>{},
   roles:
       (json['roles'] as Map<String, dynamic>?)?.map(
         (k, e) => MapEntry(k, $enumDecode(_$ClubRoleEnumMap, e)),
@@ -120,6 +125,7 @@ Map<String, dynamic> _$GameStateToJson(_GameState instance) =>
       'contest': ?instance.contest?.toJson(),
       'clubHistory': instance.clubHistory.map((e) => e.toJson()).toList(),
       'achievements': instance.achievements.map((e) => e.toJson()).toList(),
+      'setPieces': instance.setPieces,
       'roles': instance.roles.map((k, e) => MapEntry(k, _$ClubRoleEnumMap[e]!)),
       'executiveSelectionTurn': ?instance.executiveSelectionTurn,
       'lastConcertYear': ?instance.lastConcertYear,
@@ -351,6 +357,7 @@ Map<String, dynamic> _$PendingEventToJson(_PendingEvent instance) =>
 
 const _$PendingEventTypeEnumMap = {
   PendingEventType.instrumentDecision: 'instrumentDecision',
+  PendingEventType.pieceSelection: 'pieceSelection',
   PendingEventType.audition: 'audition',
   PendingEventType.contest: 'contest',
   PendingEventType.executiveSelection: 'executiveSelection',

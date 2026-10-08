@@ -82,6 +82,9 @@ abstract class GameState with _$GameState {
     /// プレイヤーの実績（6 年間を通して保持）。
     @Default(<Achievement>[]) List<Achievement> achievements,
 
+    /// 各年度のコンクールの課題曲（年度 → 曲 ID）。
+    @Default(<String, String>{}) Map<String, String> setPieces,
+
     /// 役職（ID → 役職）。
     @Default(<String, ClubRole>{}) Map<String, ClubRole> roles,
 

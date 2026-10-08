@@ -25,6 +25,8 @@ const Map<String, String> memoryTemplates = {
   'player_quit_club': '{actor}は吹奏楽部を辞めた。{target}',
   'friend_quit_sad': '{target}が部を辞めてしまい、{actor}は寂しさを覚えた',
   'rejoined_club': '{actor}はもう一度吹奏楽部に戻った',
+  'piece_proposal_adopted': '{actor}が推した課題曲「{piece}」が採用された',
+  'piece_proposal_rejected': '{actor}は課題曲に「{piece}」を推したが、採用されなかった',
   'audition_passed': '{actor}はオーディションに合格し、コンクールメンバーに選ばれた',
   'audition_failed': '{actor}はオーディションに落ち、コンクールメンバーになれなかった',
   'solo_chosen': '{actor}は自由曲の{instrument}ソロに抜擢された',

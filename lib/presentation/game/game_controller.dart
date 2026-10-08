@@ -56,6 +56,12 @@ class GameController extends Notifier<GameState?> {
     return r.lines;
   }
 
+  List<String> resolvePieceSelection(String? pieceId) {
+    final r = _tm.resolvePieceSelection(state!, pieceId);
+    _commit(r.state);
+    return r.lines;
+  }
+
   List<String> resolveAudition(ApproachCard card) {
     final r = _tm.resolveAudition(state!, card);
     _commit(r.state);

@@ -15,6 +15,7 @@ dependencies:
   hive_ce: ^2.20.2
   hive_ce_flutter: ^2.4.0
   json_annotation: ^4.12.0
+  url_launcher: ^6.3.3
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -27,6 +28,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/fonts/OFL.txt
+    # 課題曲の音源（任意）。y{年}_{番号}.mp3 の名前で置くと、Web リンクの代わりに使われる。
+    - assets/audio/
   fonts:
     # BIZ UDPゴシック（SIL Open Font License 1.1）。
     # 完全オフライン動作のため、日本語フォントをアプリに同梱する。

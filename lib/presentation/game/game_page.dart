@@ -35,6 +35,11 @@ class GamePage extends ConsumerWidget {
           title: Text(date.labelWithStage),
           actions: [
             IconButton(
+              tooltip: '課題曲',
+              icon: const Icon(Icons.library_music_outlined),
+              onPressed: () => context.push('/game/pieces'),
+            ),
+            IconButton(
               tooltip: 'セーブ',
               icon: const Icon(Icons.save_outlined),
               onPressed: () => showDialog<void>(

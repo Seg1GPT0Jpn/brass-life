@@ -4,6 +4,7 @@ import '../../entities/world.dart';
 import '../../value_objects/instrument.dart';
 import '../models/candidacy.dart';
 import 'club_membership.dart';
+import 'piece_selection.dart';
 import '../models/game_enums.dart';
 import '../models/game_state.dart';
 import '../models/player_setup.dart';
@@ -151,6 +152,21 @@ class TimeManager {
   ({GameState state, List<String> lines}) rejoinClub(GameState s) {
     final r = ClubMembership(ctx).rejoin(s);
     return (state: _log(r.state, '再入部', r.lines), lines: r.lines);
+  }
+
+  /// 課題曲の選曲に答える。[pieceId] は推す曲（顧問に任せるなら null）。
+  ({GameState state, List<String> lines}) resolvePieceSelection(
+    GameState s,
+    String? pieceId,
+  ) {
+    _expect(s, PendingEventType.pieceSelection);
+    final r = PieceSelection(ctx).run(s, pieceId);
+    return _finishEvent(
+      r.state,
+      '課題曲の選曲',
+      r.lines,
+      'piece:${pieceId ?? 'advisor'}',
+    );
   }
 
   /// 楽器決定イベントにプレイヤーの希望を提出する。
@@ -307,6 +323,7 @@ class TimeManager {
         s,
         defaultWishes,
       ).state,
+      PendingEventType.pieceSelection => resolvePieceSelection(s, null).state,
       PendingEventType.audition => resolveAudition(s, cardsOf(s).first).state,
       PendingEventType.contest => resolveContest(s, cardsOf(s).first).state,
       PendingEventType.executiveSelection => resolveExecutive(
@@ -462,6 +479,20 @@ class TimeManager {
         final out = InstrumentDecision(ctx).decide(cur);
         cur = _log(out.state, null, ['新入生の担当楽器が決まった。']);
       }
+    }
+
+    // 1.5 課題曲の選曲（5 月第 1 週）
+    if (cur.turn == school.turnOf(fy, 5, 1) && cur.setPieces['$fy'] == null) {
+      if (_playerPerforms(cur)) {
+        return cur.copyWith(
+          pending: PendingEvent(
+            type: PendingEventType.pieceSelection,
+            turn: cur.turn,
+          ),
+        );
+      }
+      final r = PieceSelection(ctx).run(cur, null);
+      cur = _log(r.state, '課題曲の選曲', r.lines);
     }
 
     // 2. オーディション（6 月第 2 週）

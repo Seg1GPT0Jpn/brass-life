@@ -8,6 +8,7 @@ import '../presentation/debug/school_detail/school_detail_page.dart';
 import '../presentation/debug/school_list/school_list_page.dart';
 import '../presentation/debug/shell/debug_shell.dart';
 import '../presentation/debug/world_overview/overview_page.dart';
+import '../presentation/game/pieces/piece_library_page.dart';
 import '../presentation/game/character_creation_page.dart';
 import '../presentation/game/ending_page.dart';
 import '../presentation/game/game_controller.dart';
@@ -42,6 +43,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, _) => const GamePage(),
         routes: [
           GoRoute(path: 'ending', builder: (_, _) => const EndingPage()),
+          GoRoute(path: 'pieces', builder: (_, _) => const PieceLibraryPage()),
           GoRoute(
             path: 'person/:id',
             builder: (_, state) =>

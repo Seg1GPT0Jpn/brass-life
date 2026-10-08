@@ -96,6 +96,7 @@ enum MonthlyPolicy {
 /// プレイヤーの入力を待つイベントの種類。
 enum PendingEventType {
   instrumentDecision('楽器決定'),
+  pieceSelection('課題曲の選曲'),
   audition('オーディション'),
   contest('コンクール'),
   executiveSelection('幹部選出'),

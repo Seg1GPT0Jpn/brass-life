@@ -77,6 +77,9 @@ void main() {
     var s = startAndDecide([InstrumentType.clarinet]);
     for (var i = 0; i < 4; i++) {
       s = tm.submitAction(s, WeeklyAction.extraPractice);
+      while (s.pending != null) {
+        s = tm.autoResolve(s);
+      }
     }
     final rested = tm.submitAction(s, WeeklyAction.rest);
     expect(rested.player.fatigue, lessThan(s.player.fatigue));

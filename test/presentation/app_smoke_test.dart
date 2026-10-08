@@ -236,6 +236,30 @@ void main() {
       final cur = container.read(gameControllerProvider)!;
       if (cur.pending != null && cur.pending!.type == PendingEventType.notice) {
         vm.resolveNotice();
+      } else if (cur.pending?.type == PendingEventType.pieceSelection) {
+        // 課題曲の選曲は画面から: 曲を選んで推す
+        final title = find.text('イベント：課題曲の選曲');
+        await tester.scrollUntilVisible(
+          title,
+          -300,
+          scrollable: homeScrollable(),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Suno で聴く'), findsWidgets);
+        await tester.tap(find.text('青空とファンファーレ'));
+        await tester.pumpAndSettle();
+        final push = find.text('「青空とファンファーレ」を推す');
+        await tester.ensureVisible(push);
+        await tester.pumpAndSettle();
+        await tester.tap(push);
+        await tester.pumpAndSettle();
+        expect(find.text('課題曲の選曲'), findsWidgets);
+        await tester.tap(find.text('OK'));
+        await tester.pumpAndSettle();
+        expect(
+          container.read(gameControllerProvider)!.setPieces.values,
+          isNotEmpty,
+        );
       } else {
         vm.skipToNextEvent(cur.policy);
       }
@@ -259,6 +283,17 @@ void main() {
     container.read(gameControllerProvider.notifier).resolveAudition(firstCard);
     await tester.pumpAndSettle();
     expect(container.read(gameControllerProvider)!.contest, isNotNull);
+
+    // 課題曲の一覧（6 年分）
+    container.read(routerProvider).push('/game/pieces');
+    await tester.pumpAndSettle();
+    expect(find.text('青空とファンファーレ'), findsOneWidget);
+    expect(find.text('今年の課題曲'), findsOneWidget);
+    await tester.tap(find.text('高3（6年目）'));
+    await tester.pumpAndSettle();
+    expect(find.text('吹奏楽のための交響的断章'), findsOneWidget);
+    container.read(routerProvider).pop();
+    await tester.pumpAndSettle();
 
     for (final tab in ['部員', '人間関係', '記録', 'ホーム']) {
       await tester.tap(find.text(tab));

@@ -4,6 +4,8 @@ import '../../value_objects/school_enums.dart';
 import '../master/approach_cards.dart';
 import '../models/game_enums.dart';
 import '../models/game_state.dart';
+import 'piece_fit.dart';
+import 'piece_selection.dart';
 import 'game_context.dart';
 import 'memory_writer.dart';
 import 'performance.dart';
@@ -297,6 +299,18 @@ class ContestEngine {
       }
     } else {
       lines.add('今年はコンクールメンバーではないので、客席から仲間を応援した。');
+    }
+    // 課題曲との相性
+    final piece = PieceSelection(ctx).currentOf(s);
+    if (piece != null) {
+      final fit = PieceFit(ctx);
+      final margin = PieceFit.margin(piece, fit.bandStats(s, members));
+      final bonus = PieceFit.contestBonus(margin);
+      v += bonus;
+      lines.add(
+        '課題曲${piece.category}「${piece.title}」'
+        '${bonus >= 2 ? 'は部の持ち味にぴたりと合っていた。' : (bonus <= -2 ? 'の難所で崩れる場面があった。' : 'を堅実にまとめた。')}',
+      );
     }
     v += rng.normalInt(mean: 0, sd: sd, min: -15, max: 15);
 
