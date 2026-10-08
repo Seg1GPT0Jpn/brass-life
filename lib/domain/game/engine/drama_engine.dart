@@ -74,13 +74,15 @@ class DramaEngine {
             npcs[id]!.skill,
             npcs[id]!.motivation,
           ),
-      _Member(
-        Relations.player,
-        player.grade,
-        player.instrument,
-        player.skill,
-        player.motivation,
-      ),
+      // 退部中のプレイヤーは部の人間関係の輪から外れる（引退後は従来どおり）。
+      if (!player.quitClub)
+        _Member(
+          Relations.player,
+          player.grade,
+          player.instrument,
+          player.skill,
+          player.motivation,
+        ),
     ];
 
     void record({

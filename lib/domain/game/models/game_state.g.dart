@@ -203,6 +203,9 @@ _PlayerState _$PlayerStateFromJson(Map<String, dynamic> json) => _PlayerState(
       const <String, int>{},
   retired: json['retired'] as bool? ?? false,
   heartache: (json['heartache'] as num?)?.toInt() ?? 0,
+  quitClub: json['quitClub'] as bool? ?? false,
+  quitCount: (json['quitCount'] as num?)?.toInt() ?? 0,
+  quitTurn: (json['quitTurn'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$PlayerStateToJson(
@@ -233,6 +236,9 @@ Map<String, dynamic> _$PlayerStateToJson(
   'actionCounts': instance.actionCounts,
   'retired': instance.retired,
   'heartache': instance.heartache,
+  'quitClub': instance.quitClub,
+  'quitCount': instance.quitCount,
+  'quitTurn': ?instance.quitTurn,
 };
 
 const _$GenderEnumMap = {Gender.female: 'female', Gender.male: 'male'};

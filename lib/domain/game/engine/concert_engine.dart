@@ -16,7 +16,7 @@ class ConcertEngine {
   List<String> performers(GameState s) => [
     for (final m in ctx.activeMembers(s))
       if (m.instrument != null) m.id,
-    if (s.player.instrument != null && !s.player.retired) Relations.player,
+    if (s.player.instrument != null && s.player.inClub) Relations.player,
   ];
 
   ({GameState state, List<String> lines}) run(GameState s, ApproachCard? card) {

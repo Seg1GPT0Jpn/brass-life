@@ -3,6 +3,7 @@ import '../../entities/player.dart';
 import '../../entities/world.dart';
 import '../../value_objects/instrument.dart';
 import '../models/candidacy.dart';
+import 'club_membership.dart';
 import '../models/game_enums.dart';
 import '../models/game_state.dart';
 import '../models/player_setup.dart';
@@ -135,6 +136,21 @@ class TimeManager {
         : '${action.label}（${ctx.npc(s, targetId).fullName}）';
     next = _log(drama.state, label, [...r.lines, ...drama.lines]);
     return _advance(next);
+  }
+
+  /// 部を辞める。週は進まない（その週の行動は続けて選ぶ）。
+  ({GameState state, List<String> lines}) quitClub(
+    GameState s,
+    QuitReason why,
+  ) {
+    final r = ClubMembership(ctx).quit(s, why);
+    return (state: _log(r.state, '退部', r.lines), lines: r.lines);
+  }
+
+  /// 部に戻る。週は進まない。
+  ({GameState state, List<String> lines}) rejoinClub(GameState s) {
+    final r = ClubMembership(ctx).rejoin(s);
+    return (state: _log(r.state, '再入部', r.lines), lines: r.lines);
   }
 
   /// 楽器決定イベントにプレイヤーの希望を提出する。
@@ -392,7 +408,11 @@ class TimeManager {
     if (s.player.fatigue >= 80) return WeeklyAction.rest;
     if (s.player.stress >= 80) return WeeklyAction.hangOut;
     final pattern = s.policy.pattern;
-    return pattern[(d.weekOfMonth - 1) % pattern.length];
+    final a = pattern[(d.weekOfMonth - 1) % pattern.length];
+    // 退部中などで選べない行動は、自主練に置き換える。
+    return InteractionRules(ctx).unavailableReason(s, a, null) == null
+        ? a
+        : WeeklyAction.individualPractice;
   }
 
   // ───────────────────────── 内部処理 ─────────────────────────
@@ -414,7 +434,7 @@ class TimeManager {
   }
 
   bool _playerPerforms(GameState s) =>
-      s.player.instrument != null && !s.player.retired;
+      s.player.instrument != null && s.player.inClub;
 
   /// その週に予定されているイベントを順に処理する。
   /// プレイヤーの入力が必要なものは pending に設定して止まり、解決後に再び呼ばれる。
@@ -654,7 +674,10 @@ class TimeManager {
     }
     var player = s.player;
     final lines = <String>['3年生 $count 人が引退した。'];
-    if (player.grade == 3 && !player.retired) {
+    if (player.grade == 3 && !player.retired && player.quitClub) {
+      // 退部していた場合は、同級生の引退とともに部へ戻る道もなくなる。
+      player = player.copyWith(retired: true);
+    } else if (player.grade == 3 && !player.retired) {
       player = player.copyWith(retired: true);
       mem.add(
         category: MemoryCategory.life,

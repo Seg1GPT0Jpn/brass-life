@@ -237,7 +237,9 @@ class ClubSceneService {
         : (p.motivation < 30
               ? ActorMood.down
               : (p.motivation >= 75 ? ActorMood.happy : ActorMood.normal));
-    final home = p.retired ? SceneLocation.library : partRoomOf(p.instrument);
+    final home = p.quitClub
+        ? SceneLocation.gate
+        : (p.retired ? SceneLocation.library : partRoomOf(p.instrument));
     // 直近の行動の場所にいる（ターン開始時の選択前の姿）。
     final last = s.choices.isEmpty ? null : s.choices.last.split(':');
     final action = last == null || last.length < 2

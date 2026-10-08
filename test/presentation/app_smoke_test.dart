@@ -154,7 +154,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('基礎練'), findsOneWidget);
     expect(find.text('楽器メンテ'), findsOneWidget);
-    expect(find.text('担当楽器が決まってから'), findsOneWidget);
+    expect(find.text('担当楽器が決まってから'), findsWidgets);
     await tester.tap(find.text('曲練'));
     await tester.pumpAndSettle();
     expect(find.text('イベント：担当楽器の決定'), findsOneWidget);
@@ -377,6 +377,47 @@ void main() {
       after.roles['player'] == ClubRole.conductor || after.player.heartache > 0,
       isTrue,
     );
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('退部: 理由を選んで退部届を出し、また部に戻れる', (tester) async {
+    final container = await pumpApp(tester, const Size(1280, 900));
+    await tester.runAsync(() async {
+      await container.read(worldControllerProvider.notifier).generate('TEST');
+    });
+    await tester.pumpAndSettle();
+    final vm = container.read(gameControllerProvider.notifier);
+    vm.newGame();
+    vm.submit(WeeklyAction.individualPractice);
+    vm.resolveInstrument([InstrumentType.flute]);
+    container.read(routerProvider).go('/game');
+    await tester.pumpAndSettle();
+
+    final quit = find.text('退部を考える…');
+    await tester.ensureVisible(quit);
+    await tester.pumpAndSettle();
+    await tester.tap(quit);
+    await tester.pumpAndSettle();
+    expect(find.text('退部届を出す？'), findsOneWidget);
+    await tester.tap(find.text('心が疲れてしまった'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('退部届を出す'));
+    await tester.pumpAndSettle();
+    expect(container.read(gameControllerProvider)!.player.quitClub, isTrue);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(find.text('退部中'), findsOneWidget);
+
+    final back = find.text('部に戻る');
+    await tester.ensureVisible(back);
+    await tester.pumpAndSettle();
+    await tester.tap(back);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('戻る'));
+    await tester.pumpAndSettle();
+    expect(container.read(gameControllerProvider)!.player.inClub, isTrue);
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../../core/rng/seed_code.dart';
+import '../../domain/game/engine/club_membership.dart';
 import '../../domain/game/engine/game_context.dart';
 import '../../domain/game/engine/time_manager.dart';
 import '../../domain/game/master/approach_cards.dart';
@@ -87,6 +88,18 @@ class GameController extends Notifier<GameState?> {
 
   List<String> resolveApplication(List<String> schoolIds) {
     final r = _tm.resolveApplication(state!, schoolIds);
+    _commit(r.state);
+    return r.lines;
+  }
+
+  List<String> quitClub(QuitReason why) {
+    final r = _tm.quitClub(state!, why);
+    _commit(r.state);
+    return r.lines;
+  }
+
+  List<String> rejoinClub() {
+    final r = _tm.rejoinClub(state!);
     _commit(r.state);
     return r.lines;
   }

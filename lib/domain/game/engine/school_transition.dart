@@ -112,6 +112,9 @@ class SchoolTransition {
     final player = p.copyWith(
       grade: 1,
       retired: false,
+      quitClub: false,
+      quitCount: 0,
+      quitTurn: null,
       previousInstrument: p.instrument ?? p.previousInstrument,
       instrument: null,
       wishes: const [],

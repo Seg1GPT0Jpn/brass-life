@@ -143,7 +143,7 @@ class ExecutiveEngine {
   ({GameState state, List<String> lines}) run(GameState s, Candidacy? choice) {
     final club = ctx.club(s);
     final members = ctx.activeMembers(s);
-    final playerActive = !s.player.retired && s.player.instrument != null;
+    final playerActive = s.player.inClub && s.player.instrument != null;
     final secondYears = [
       for (final m in members)
         if (m.grade == 2) m.id,

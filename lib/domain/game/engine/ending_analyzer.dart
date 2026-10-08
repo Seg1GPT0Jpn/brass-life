@@ -52,6 +52,12 @@ class _Features {
         count('extraPractice'),
   );
   int get extraPct => pct(count('extraPractice'));
+
+  /// 退部した回数・再入部した回数（6 年間の記憶から）。
+  int _playerMemories(String key) => s.memories
+      .where((m) => m.reasonKey == key && m.subjectId == 'player')
+      .length;
+  int get quits => _playerMemories('player_quit_club');
   int get studyPct => pct(count('study'));
   int get hangOutPct => pct(count('hangOut'));
   int get restPct => pct(count('rest'));
@@ -245,6 +251,12 @@ class EndingAnalyzer {
         '学業の星',
         f.avgGrade >= 42 && f.studyPct >= 30 ? 50 + f.studyPct ~/ 2 : 0,
         '評定平均 ${(f.avgGrade / 10).toStringAsFixed(1)}。勉強を大切にした。',
+      ),
+      ('もうひとつの青春', p.quitClub ? 62 : 0, '吹奏楽部を途中で離れ、部活の外に自分の居場所を見つけた。'),
+      (
+        '戻ってきた奏者',
+        f.quits > 0 && !p.quitClub ? 58 + f.bestContestWeight ~/ 5 : 0,
+        '一度は部を離れたが、もう一度楽器を手に取った。',
       ),
       ('自分らしく', 30, '自分のペースで6年間を駆け抜けた。'),
     ]..sort((a, b) => b.$2.compareTo(a.$2));

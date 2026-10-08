@@ -58,7 +58,7 @@ class InteractionRules {
     String? targetId,
   ) {
     final p = s.player;
-    // 従来の 7 行動（月の方針でも使う）は常に選べる。空間 UI 由来の行動にだけ条件がある。
+    // 従来の 7 行動（月の方針でも使う）は、退部中のパート練習・居残り以外は常に選べる。
     final needsInstrument =
         action == WeeklyAction.maintenance ||
         action == WeeklyAction.ensemble ||
@@ -66,6 +66,16 @@ class InteractionRules {
         action == WeeklyAction.learnFrom ||
         action == WeeklyAction.teach;
     if (needsInstrument && p.instrument == null) return '担当楽器が決まってから';
+    if (p.quitClub &&
+        (action == WeeklyAction.partPractice ||
+            action == WeeklyAction.extraPractice ||
+            action == WeeklyAction.ensemble ||
+            action == WeeklyAction.maintenance ||
+            action == WeeklyAction.practiceWith ||
+            action == WeeklyAction.learnFrom ||
+            action == WeeklyAction.teach)) {
+      return '部を辞めている';
+    }
     if (p.retired &&
         (action == WeeklyAction.ensemble ||
             action == WeeklyAction.practiceWith ||

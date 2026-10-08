@@ -9,6 +9,7 @@ import '../../domain/game/models/game_state.dart';
 import '../../domain/game/scene/scene_models.dart';
 import '../../domain/value_objects/instrument.dart';
 import '../common/widgets/common_widgets.dart';
+import 'club_membership_card.dart';
 import 'game_controller.dart';
 import 'event_panels.dart';
 import 'exam_panels.dart';
@@ -53,6 +54,7 @@ class HomeTab extends ConsumerWidget {
     final finished = s.stage == GameStage.finished;
     final diorama = finished ? null : const _DioramaCard();
     final skip = finished || s.pending != null ? null : const _SkipPanel();
+    final membership = finished ? null : const ClubMembershipCard();
     final log = _LogCard(s);
     if (wide) {
       return Row(
@@ -62,7 +64,7 @@ class HomeTab extends ConsumerWidget {
             width: 380,
             child: ListView(
               padding: const EdgeInsets.all(16),
-              children: [status],
+              children: [status, ?membership],
             ),
           ),
           Expanded(
@@ -76,7 +78,7 @@ class HomeTab extends ConsumerWidget {
     }
     return ListView(
       padding: const EdgeInsets.all(12),
-      children: [?main, ?diorama, status, ?skip, log],
+      children: [?main, ?diorama, status, ?skip, ?membership, log],
     );
   }
 }
@@ -112,8 +114,12 @@ class _StatusCard extends ConsumerWidget {
           ),
           KvRow('担当', p.instrument?.label ?? '未定'),
           if (s.roles['player'] != null) KvRow('役職', s.roles['player']!.label),
-          if (p.retired) const KvRow('部活', '引退済み'),
-          if (s.contest != null &&
+          if (p.quitClub)
+            const KvRow('部活', '退部中')
+          else if (p.retired)
+            const KvRow('部活', '引退済み'),
+          if (!p.quitClub &&
+              s.contest != null &&
               s.contest!.fiscalYear == ctx.calendar.dateOf(s.turn).fiscalYear)
             KvRow(
               'コンクール',

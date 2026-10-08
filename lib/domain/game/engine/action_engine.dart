@@ -102,7 +102,7 @@ class ActionEngine {
     final mem = MemoryWriter(ctx, s);
     final attends = action != WeeklyAction.rest;
     // 引退後は部活の合奏・通常練習がない（自主的な練習のみ）。
-    final inClub = attends && !p.retired;
+    final inClub = attends && p.inClub;
     final role = s.roles['player'];
     final leads = role == ClubRole.captain || role == ClubRole.gradeRep;
 
@@ -241,6 +241,8 @@ class ActionEngine {
             _ => 0,
           } +
           (leads && inClub ? 1 : 0);
+      // 退部中は顧問の目に触れない。
+      final advisorTrust = p.quitClub ? p.advisorTrust : trust;
       lines.add(
         '疲労 ${_signed(fatigue - p.fatigue)}（$fatigue） ／ '
         'ストレス ${_signed(stress.clamp(0, 100) - p.stress)}（${stress.clamp(0, 100)}）',
@@ -250,8 +252,13 @@ class ActionEngine {
         stress: stress.clamp(0, 100),
         motivation: motivation.clamp(0, 100),
         social: social.clamp(0, 100),
-        advisorTrust: trust.clamp(0, 100),
+        advisorTrust: advisorTrust.clamp(0, 100),
       );
+    }
+
+    // 退部中は、練習しない週ごとに腕が少しずつ鈍る。
+    if (p.quitClub && !action.isPractice && p.skill > 100) {
+      p = p.copyWith(skill: p.skill - 1);
     }
 
     // 心の傷はゆっくりとしか癒えない（週に 1。誰かと話す・遊ぶ・一息つくと少し早まる）。

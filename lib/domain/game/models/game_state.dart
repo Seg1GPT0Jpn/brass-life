@@ -175,9 +175,21 @@ abstract class PlayerState with _$PlayerState {
     /// やる気の基準値を下げ、ストレスが下がりきらなくなり、上達も鈍る。
     /// 週に少しずつしか癒えない（雑談・遊び・一息つくと少し早まる）。
     @Default(0) int heartache,
+
+    /// 部を辞めている（退部中）。
+    @Default(false) bool quitClub,
+
+    /// 退部した回数（今の学校で）。2 回目以降は戻りにくい。
+    @Default(0) int quitCount,
+
+    /// 最後に退部したターン。
+    int? quitTurn,
   }) = _PlayerState;
 
   const PlayerState._();
+
+  /// 部活に参加している（引退も退部もしていない）。
+  bool get inClub => !retired && !quitClub;
 
   factory PlayerState.fromJson(Map<String, dynamic> json) =>
       _$PlayerStateFromJson(json);
