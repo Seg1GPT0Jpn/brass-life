@@ -4,11 +4,14 @@ import '../../entities/world.dart';
 import '../../value_objects/instrument.dart';
 import '../models/candidacy.dart';
 import '../conducting/conducting.dart';
+import '../conducting/rehearsal.dart';
 import '../../career/career_engine.dart';
 import '../../career/game_mode.dart';
 import '../../career/mode_states.dart';
+import '../../career/transfer_offer.dart';
 import 'club_membership.dart';
 import 'piece_selection.dart';
+import 'retirement_shock.dart';
 import '../models/game_enums.dart';
 import '../models/game_state.dart';
 import '../models/player_setup.dart';
@@ -125,7 +128,15 @@ class TimeManager {
     }
     if (s.stage == GameStage.finished) return s;
     final r = CareerEngine(ctx).apply(s, command, targetId);
+    final sample = RehearsalRules.ofCareer(s, command);
     final next = r.state.copyWith(
+      rehearsal: sample == null
+          ? r.state.rehearsal
+          : RehearsalRules.record(
+              r.state.rehearsal,
+              ctx.calendar.dateOf(s.turn).fiscalYear,
+              [sample],
+            ),
       choices: [
         ...r.state.choices,
         '${s.turn}:cmd:${command.name}${targetId == null ? '' : ':$targetId'}',
@@ -143,6 +154,12 @@ class TimeManager {
         ...drama.lines,
       ]),
     );
+  }
+
+  /// 顧問: 異動のオファーを受けて、次の任期を始める。
+  GameState acceptTransfer(GameState s, String schoolId) {
+    if (s.stage != GameStage.finished) throw StateError('任期の終わりにのみ');
+    return _prepareTurn(CareerEngine(ctx).startNextTerm(s, schoolId));
   }
 
   /// 顧問の練習メニューを変える（週は進まない）。
@@ -190,7 +207,16 @@ class TimeManager {
     final reason = InteractionRules(ctx).unavailableReason(s, action, targetId);
     if (reason != null) throw ArgumentError(reason);
     final r = ActionEngine(ctx).resolve(s, action, targetId: targetId);
+    // 日頃の練習の記憶（部の通常練習 + この週の行動）
+    final fy = ctx.calendar.dateOf(s.turn).fiscalYear;
+    final rehearsal = s.player.inClub && action != WeeklyAction.rest
+        ? RehearsalRules.record(s.rehearsal, fy, [
+            RehearsalRules.club,
+            ?RehearsalRules.ofAction(action),
+          ])
+        : s.rehearsal;
     var next = r.state.copyWith(
+      rehearsal: rehearsal,
       choices: [
         ...r.state.choices,
         '${s.turn}:${ActionEngine.choiceKey(action, targetId)}',
@@ -827,11 +853,13 @@ class TimeManager {
     final npcs = Map.of(s.npcs);
     final mem = MemoryWriter(ctx, s);
     var count = 0;
+    final retirees = <String>[];
     for (final id in s.roster) {
       final st = npcs[id]!;
       if (st.active && st.grade == 3 && !st.retired) {
         npcs[id] = st.copyWith(retired: true);
         count++;
+        retirees.add(id);
       }
     }
     var player = s.player;
@@ -851,6 +879,22 @@ class TimeManager {
       );
       lines.add('あなたも部活を引退した。これからは受験に向けて頑張ろう。');
     }
+    // 引退ショック: 3 年生（とプレイヤー）が抜けた穴の大きさで、部の技術とテンションが落ち込む
+    if (s.player.grade == 3 && s.player.inClub && s.player.instrument != null) {
+      retirees.add(Relations.player);
+    }
+    final shock = RetirementShock.of(
+      s.copyWith(npcs: npcs),
+      retirees,
+      skillOf: (id) =>
+          id == Relations.player ? s.player.skill : s.npcs[id]!.skill,
+    );
+    if (shock.techniqueShock > 0 || shock.tensionShock > 0) {
+      lines.add(
+        '引退ショック：部の技術 -${shock.techniqueShock}・テンション -${shock.tensionShock}'
+        '（新しい代が育つまで、しばらく続く）',
+      );
+    }
     final sept = school.turnOf(fiscalYear, 9, 1);
     final execTurn = sept > s.turn ? sept : s.turn;
     final next = mem.apply(
@@ -859,6 +903,14 @@ class TimeManager {
         player: player,
         contest: s.contest!.copyWith(retirementDone: true),
         executiveSelectionTurn: execTurn,
+        condition: ClubCondition(
+          techniqueShock: (s.condition.techniqueShock + shock.techniqueShock)
+              .clamp(0, RetirementShock.max),
+          tensionShock: (s.condition.tensionShock + shock.tensionShock).clamp(
+            0,
+            RetirementShock.max,
+          ),
+        ),
       ),
     );
     return _log(next, null, lines);
@@ -868,10 +920,21 @@ class TimeManager {
   GameState _newFiscalYear(GameState s, int fiscalYear) {
     // 大人編: 任期が終わったらエンディングへ
     if (s.mode.isCareer && s.turn >= s.career!.termEndTurn) {
-      return _notice(s.copyWith(stage: GameStage.finished), '任期の終わり', [
-        '${GameMode.termYears}年間の任期が終わった。',
-        'エンディングを見よう。',
-      ]);
+      // 顧問には実績に応じた異動のオファーが届く
+      final offers = TransferOfferEngine(ctx).offers(s);
+      return _notice(
+        s.copyWith(
+          stage: GameStage.finished,
+          career: s.career!.copyWith(transferOffers: offers),
+        ),
+        '任期の終わり',
+        [
+          '${GameMode.termYears}年間の任期が終わった。',
+          if (offers.isNotEmpty)
+            '異動のオファーが ${offers.length} 件届いた。エンディングの画面から選べる。',
+          'エンディングを見よう。',
+        ],
+      );
     }
     final club = ctx.club(s);
     final npcs = Map.of(s.npcs);

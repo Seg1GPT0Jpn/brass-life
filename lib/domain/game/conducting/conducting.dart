@@ -6,7 +6,9 @@
 /// 音が割れて（崩壊）減点される。判定は入力と部の状態だけで決まる（乱数なし）。
 library;
 
+import '../models/game_state.dart';
 import '../models/piece.dart';
+import 'rehearsal.dart';
 
 /// 判定に使う部の地力（0..100。PieceFit.bandStats から作る）。
 class ConductingParams {
@@ -253,6 +255,8 @@ class PhraseResult {
     required this.expression,
     required this.judgement,
     required this.fitPermille,
+    this.rehearsalPenalty = 0,
+    this.offRehearsal = false,
   });
 
   final ConductingPhrase phrase;
@@ -263,7 +267,18 @@ class PhraseResult {
   /// 曲の性格に合っているか（千分率。理想どおりで 1100、大きく外すと 850）。
   final int fitPermille;
 
-  int get permille => judgement.multiplierPermille * fitPermille ~/ 1000;
+  /// 日頃の練習から外れた分の減点（千分率）。
+  final int rehearsalPenalty;
+
+  /// 練習と違いすぎて合奏が崩れた。
+  final bool offRehearsal;
+
+  int get permille =>
+      judgement.multiplierPermille *
+      fitPermille ~/
+      1000 *
+      (1000 - rehearsalPenalty) ~/
+      1000;
 }
 
 /// 指揮プラン全体の評価。
@@ -318,26 +333,40 @@ abstract final class ConductingEvaluator {
   }
 
   /// プランを評価する。フレーズより短いプランは「指示なし（50, 50）」で補う。
+  ///
+  /// [rehearsal] を渡すと、日頃の練習から大きく外れた指示に減点（と崩壊）を加える。
   static ConductingResult evaluate(
     Piece piece,
     ConductingParams params,
-    ConductingPlan plan,
-  ) {
+    ConductingPlan plan, {
+    RehearsalMemory? rehearsal,
+  }) {
     final phrases = PieceStructure.of(piece);
     return ConductingResult([
       for (var i = 0; i < phrases.length; i++)
         () {
           final (d, e) = i < plan.steps.length ? plan.steps[i] : (50, 50);
-          final j = ConductingJudge.judge(
+          var j = ConductingJudge.judge(
             params,
             ConductingInput(atMs: i, dynamics: d, expression: e),
           );
+          final r = rehearsal ?? const RehearsalMemory();
+          final off = RehearsalPenalty.collapses(r, d, e);
+          if (off) {
+            j = ConductingJudgement(
+              multiplierPermille: j.multiplierPermille,
+              verdict: ConductingVerdict.collapse,
+              reason: '練習と違いすぎて、合奏が崩れた',
+            );
+          }
           return PhraseResult(
             phrase: phrases[i],
             dynamics: d,
             expression: e,
             judgement: j,
             fitPermille: fit(phrases[i], d, e),
+            rehearsalPenalty: RehearsalPenalty.penaltyPermille(r, d, e),
+            offRehearsal: off,
           );
         }(),
     ]);

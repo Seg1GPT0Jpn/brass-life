@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/feature_flags.dart';
 import '../../../domain/game/conducting/conducting.dart';
 import '../../../domain/game/conducting/conducting_effect.dart';
+import '../../../domain/game/conducting/rehearsal.dart';
 import '../../../domain/game/engine/concert_engine.dart';
 import '../../../domain/game/engine/piece_fit.dart';
 import '../../../domain/game/engine/piece_selection.dart';
@@ -57,6 +58,7 @@ Future<void> runPerformance(
         PieceFit(ctx).bandStats(s, members),
       ),
       fullAuthority: ConductingEffect.fullAuthority(s),
+      rehearsal: RehearsalRules.of(s, ctx.calendar.dateOf(s.turn).fiscalYear),
     );
     if (!context.mounted) return;
   }

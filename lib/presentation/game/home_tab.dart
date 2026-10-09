@@ -143,6 +143,11 @@ class _StatusCard extends ConsumerWidget {
               '${piece.category}「${piece.title}」',
               onTap: () => context.push('/game/pieces'),
             ),
+          if (s.condition.techniqueShock > 0 || s.condition.tensionShock > 0)
+            KvRow(
+              '部の調子',
+              '引退ショック（技術 -${s.condition.techniqueShock}・テンション -${s.condition.tensionShock}）',
+            ),
           if (p.instrument != null)
             ValueBar(label: '熟練度', value: p.skill, max: 1000),
           ValueBar(label: '音楽性', value: p.musicality, max: 1000),

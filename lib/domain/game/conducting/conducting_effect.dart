@@ -6,6 +6,7 @@ import '../engine/relations.dart';
 import '../models/game_enums.dart';
 import '../models/game_state.dart';
 import 'conducting.dart';
+import 'rehearsal.dart';
 
 /// 本番の指揮プランを演奏評価に反映する（コンクール・定期演奏会で共通）。
 ///
@@ -28,7 +29,13 @@ abstract final class ConductingEffect {
     final params = ConductingParams.fromBandStats(
       PieceFit(ctx).bandStats(s, members),
     );
-    final result = ConductingEvaluator.evaluate(piece, params, plan);
+    final fy = ctx.calendar.dateOf(s.turn).fiscalYear;
+    final result = ConductingEvaluator.evaluate(
+      piece,
+      params,
+      plan,
+      rehearsal: RehearsalRules.of(s, fy),
+    );
     final full = fullAuthority(s);
     final bonus = full ? result.bonus : result.bonus ~/ 2;
     return (

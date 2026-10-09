@@ -5,6 +5,7 @@ import '../master/approach_cards.dart';
 import '../models/game_state.dart';
 import 'game_context.dart';
 import 'relations.dart';
+import 'retirement_shock.dart';
 
 /// 演奏の評価に使う部の状態。
 class BandMetrics {
@@ -59,10 +60,17 @@ class Performance {
       }
     }
     final possible = n * (n - 1);
+    // 引退ショックなど、部全体の一時的な調子を反映する
+    final adjusted = RetirementShock.applyTo(
+      ctx,
+      s.condition,
+      n == 0 ? 0 : skill ~/ n,
+      n == 0 ? 50 : mot ~/ n,
+    );
     return BandMetrics(
-      avgSkill: n == 0 ? 0 : skill ~/ n,
+      avgSkill: adjusted.avgSkill,
       cohesion: possible <= 0 ? 0 : (aff * 4 ~/ possible).clamp(-100, 100),
-      avgMotivation: n == 0 ? 50 : mot ~/ n,
+      avgMotivation: adjusted.avgMotivation,
       teaching: ctx.advisor(s).advisorProfile!.teachingSkill,
       size: n,
     );

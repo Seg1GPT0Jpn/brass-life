@@ -1,7 +1,7 @@
 # Phase 7・8 設計メモ
 
 **実装済み（v2.0）**。機能の切り替えは `lib/app/feature_flags.dart`（不具合時に個別に止められる）。
-本編の挙動は、指揮ミニゲームを遊ばない限り変わらない（6 年間のゴールデン `a7b28265`）。
+本編の挙動は、指揮ミニゲームを遊ばない限り変わらない（6 年間のゴールデン `67790e88`）。
 
 | フラグ | 既定 | 内容 |
 |---|---|---|
@@ -110,3 +110,21 @@ NPC への影響はすべて既存の関係性ベクトルと記憶（MemoryTag�
   生徒としての出来事（楽器決定・受験・進級・卒業）は大人編では起きない。顧問は選曲・オーディション（`teacherAudition`）・
   コンクール・定期演奏会が入力待ちになる。任期の終わり（4 年目の 4 月）に `stage = finished`。
   エンディングは `CareerEndingAnalyzer`。大人編の終わりは周回の記録に残さない（解放は本編の卒業でのみ）。
+
+## v2.1 の追加（Gemini の改善案より）
+
+| 項目 | 実装 | テスト |
+|---|---|---|
+| やる気の伝播 | `domain/game/engine/motivation_spread.dart`（DramaEngine の 2.5 段階。ID 順・受け手ごとに合算してから反映） | `test/domain/game/club_dynamics_test.dart` |
+| 引退ショック | `domain/game/engine/retirement_shock.dart`、`GameState.condition`（`Performance.metrics` に反映、毎週回復） | 同上 |
+| リハーサル記憶 | `domain/game/conducting/rehearsal.dart`、`GameState.rehearsal`、`ConductingEvaluator.evaluate(rehearsal:)` | `test/domain/game/rehearsal_test.dart` |
+| 顧問の異動 | `domain/career/transfer_offer.dart`、`CareerEngine.startNextTerm`、`TimeManager.acceptTransfer` | `test/domain/career/transfer_offer_test.dart` |
+| 決定論的状態テスト | — | `test/domain/deterministic_test.dart` |
+
+- 伝播の式: 変化 × (30 + 受け手→発信者の信頼(0..60)×2)% × (幹部 1.0 / 人望 0.7)、1 人から ±4 まで。変化が ±3 未満なら伝わらない。
+- 引退ショック: 技術 = 抜けた人の熟練度合計 ÷ 残る人数 ÷ 12、テンション = 3 + 抜けた人数×8÷残る人数 + 幹部×2 + 信頼の項（各 3〜20）。
+  テンションは毎週 1、技術は 2 週に 1 戻る。演奏の指標では熟練度が 1 につき 5、やる気が 1 につき 1 下がる。
+- リハーサル: 部活に出た週に「通常練習 (55, 55)」と行動ごとの練習（基礎練 (35, 35)、居残り (75, 65)、合奏 (60, 70) など）を記録。
+  本番の指示が平均から各軸 45 を超えて外れると、超過分 ×(6 + 慣れ÷3) の千分率で減点（最大 0.4）。超過 15 以上かつ練習 10 回以上で崩壊。
+- 異動: 実績 = 最高成績 + 信頼 − 去った生徒×5。55 以上で栄転 2・立て直し 1、未満なら立て直し 2（30 以上なら栄転 1 も）。
+  暦は 6 年度ぶんなので、異動できるのは 1 回（1〜3 年目 → 4〜6 年目）。

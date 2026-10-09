@@ -82,6 +82,10 @@ class GameController extends Notifier<GameState?> {
   void submitCareer(CareerCommand command, {String? targetId}) =>
       _commit(_tm.submitCareerCommand(state!, command, targetId: targetId));
 
+  /// 顧問: 異動のオファーを受けて、次の任期を始める。
+  void acceptTransfer(String schoolId) =>
+      _commit(_tm.acceptTransfer(state!, schoolId));
+
   void setPracticeMenu(PracticeMenuPreset menu) =>
       _commit(_tm.setPracticeMenu(state!, menu));
 

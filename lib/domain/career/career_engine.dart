@@ -55,6 +55,7 @@ class CareerEngine {
             : const [],
         money: mode == GameMode.alumni ? 30000 : 0,
         originTitle: originTitle,
+        servedSchoolIds: mode == GameMode.teacher ? [schoolId] : const [],
       ),
       player: PlayerState(
         familyName: familyName,
@@ -81,6 +82,63 @@ class CareerEngine {
               _ => '母校・${school.name}の吹奏楽部を、OB/OG として支えることにした。',
             },
             '部員は ${roster.length} 人。任期は ${GameMode.termYears} 年。',
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// 顧問: 異動を受けて、[schoolId] で次の任期を始める（暦は続きから）。
+  ///
+  /// 名簿はその年度の部（RosterService.materialize）に入れ替え、関係性・記憶・実績は引き継ぐ。
+  GameState startNextTerm(GameState s, String schoolId) {
+    final career = s.career!;
+    if (s.mode != GameMode.teacher) throw StateError('顧問モードのみ');
+    if (!career.transferOffers.any((o) => o.schoolId == schoolId)) {
+      throw ArgumentError('オファーのない学校: $schoolId');
+    }
+    final fy = ctx.calendar.dateOf(s.turn).fiscalYear;
+    final club = ctx.index.clubOfSchool(schoolId);
+    final m = RosterService(ctx).materialize(club, fy);
+    final npcs = {
+      for (final e in s.npcs.entries) e.key: e.value.copyWith(active: false),
+      ...m.states,
+    };
+    final school = ctx.index.schoolById[schoolId]!;
+    final offer = career.transferOffers.firstWhere(
+      (o) => o.schoolId == schoolId,
+    );
+    return s.copyWith(
+      stage: GameStage.middle,
+      pending: null,
+      schoolId: schoolId,
+      schoolHistory: [...s.schoolHistory, schoolId],
+      roster: [...m.roster],
+      npcs: npcs,
+      extraNpcs: {...s.extraNpcs, ...m.extra},
+      roles: const {},
+      contest: null,
+      contestMembers: const [],
+      soloistId: null,
+      executiveSelectionTurn: null,
+      condition: const ClubCondition(),
+      rehearsal: const RehearsalMemory(),
+      choices: [...s.choices, '${s.turn}:transfer:$schoolId'],
+      career: career.copyWith(
+        termEndTurn: SchoolCalendar(ctx.calendar)
+            .turnOf(fy + GameMode.termYears, 4, 1),
+        transferOffers: const [],
+        servedSchoolIds: [...career.servedSchoolIds, schoolId],
+      ),
+      logs: [
+        ...s.logs,
+        WeekLog(
+          turn: s.turn,
+          dateLabel: ctx.dateLabelOf(s),
+          actionLabel: '異動',
+          lines: [
+            '${offer.kind == 'promotion' ? '栄転' : '立て直しのため'}、${school.name}の吹奏楽部の顧問として着任した。',
+            '部員は ${m.roster.length} 人。新しい任期は ${GameMode.termYears} 年。',
           ],
         ),
       ],

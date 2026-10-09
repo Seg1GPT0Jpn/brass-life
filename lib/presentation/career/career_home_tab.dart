@@ -108,6 +108,11 @@ class CareerStatusCard extends ConsumerWidget {
           ),
           KvRow('部員', '${members.length} 人'),
           KvRow('任期', 'あと $weeksLeft 週'),
+          if (s.condition.techniqueShock > 0 || s.condition.tensionShock > 0)
+            KvRow(
+              '部の調子',
+              '引退ショック（技術 -${s.condition.techniqueShock}・テンション -${s.condition.tensionShock}）',
+            ),
           if (piece != null) KvRow('課題曲', '${piece.category}「${piece.title}」'),
           ValueBar(label: '部員のやる気', value: avg((m) => m.motivation), max: 100),
           ValueBar(label: '部員のストレス', value: avg((m) => m.stress), max: 100),

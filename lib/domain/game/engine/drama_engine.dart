@@ -10,7 +10,9 @@ import '../models/game_enums.dart';
 import '../models/game_state.dart';
 import 'game_context.dart';
 import 'memory_writer.dart';
+import 'motivation_spread.dart';
 import 'relations.dart';
+import 'retirement_shock.dart';
 
 /// 部員 1 人分の、行動判定に必要な情報（NPC とプレイヤーを同じ形で扱う）。
 class _Member {
@@ -686,6 +688,26 @@ class DramaEngine {
       );
     }
 
+    // ── 2.5 やる気の伝播（幹部・人望のある部員から同じパートへ）──
+    final spread = MotivationSpread.apply(
+      before: s.npcs,
+      after: npcs,
+      relations: relations,
+      roles: s.roles,
+      isPopular: (id) {
+        final n = ctx.npc(s, id);
+        return n.hasTrait('leader') ||
+            n.hasTrait('mood_maker') ||
+            n.hasTrait('caring');
+      },
+    );
+    if (spread.received.isNotEmpty) {
+      // spread.npcs は新しいマップ（伝播がなければ npcs と同じ参照なので触らない）
+      npcs
+        ..clear()
+        ..addAll(spread.npcs);
+    }
+
     // ── 3. 退部判定 ──
     final roster = <String>[];
     for (final id in s.roster) {
@@ -737,7 +759,13 @@ class DramaEngine {
       for (final e in otherEvents.take(3)) '部内：${e.$2}',
     ];
     final next = mem.apply(
-      s.copyWith(npcs: npcs, relations: rel, player: player, roster: roster),
+      s.copyWith(
+        npcs: npcs,
+        relations: rel,
+        player: player,
+        roster: roster,
+        condition: RetirementShock.recover(s.condition, s.turn),
+      ),
     );
     return (state: next, lines: lines);
   }

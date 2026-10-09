@@ -103,6 +103,39 @@ class EndingPage extends ConsumerWidget {
                   children: [for (final (k, v) in e.stats) KvRow(k, v)],
                 ),
               ),
+              if (s.career?.transferOffers.isNotEmpty ?? false)
+                SectionCard(
+                  title: '異動のオファー',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Text('実績を見て、次の赴任先から声がかかった。受ければ、そこで次の任期（3年）が始まる。'),
+                      const SizedBox(height: 8),
+                      for (final o in s.career!.transferOffers)
+                        Card(
+                          child: ListTile(
+                            leading: Icon(
+                              o.kind == 'promotion'
+                                  ? Icons.trending_up
+                                  : Icons.construction,
+                            ),
+                            title: Text(
+                              '${o.kind == 'promotion' ? '栄転' : '立て直し'}：'
+                              '${ref.read(gameContextProvider)!.index.schoolById[o.schoolId]!.name}',
+                            ),
+                            subtitle: Text(o.reason),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: () {
+                              ref
+                                  .read(gameControllerProvider.notifier)
+                                  .acceptTransfer(o.schoolId);
+                              context.go('/game');
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               const SizedBox(height: 8),
               FilledButton.icon(
                 onPressed: () => context.go('/'),

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/game/conducting/conducting.dart';
+import '../../../domain/game/conducting/rehearsal.dart';
+import '../../../domain/game/models/game_state.dart';
 import '../../../domain/game/models/piece.dart';
 import '../pieces/piece_player.dart';
 
@@ -14,6 +16,7 @@ Future<ConductingPlan?> showConductingPage(
   required Piece piece,
   required ConductingParams params,
   required bool fullAuthority,
+  RehearsalMemory rehearsal = const RehearsalMemory(),
 }) => Navigator.of(context).push<ConductingPlan>(
   MaterialPageRoute(
     fullscreenDialog: true,
@@ -22,6 +25,7 @@ Future<ConductingPlan?> showConductingPage(
       piece: piece,
       params: params,
       fullAuthority: fullAuthority,
+      rehearsal: rehearsal,
     ),
   ),
 );
@@ -37,12 +41,16 @@ class ConductingPage extends ConsumerStatefulWidget {
     required this.piece,
     required this.params,
     required this.fullAuthority,
+    this.rehearsal = const RehearsalMemory(),
   });
 
   final String title;
   final Piece piece;
   final ConductingParams params;
   final bool fullAuthority;
+
+  /// 日頃の練習の記憶（ここから大きく外れた指示は崩れやすい）。
+  final RehearsalMemory rehearsal;
 
   static const phraseSeconds = 10;
 
@@ -126,6 +134,15 @@ class _ConductingPageState extends ConsumerState<ConductingPage> {
           _Timeline(phrases: phrases, index: _index),
           const SizedBox(height: 12),
           _CapacityRow(params: widget.params),
+          const SizedBox(height: 4),
+          Text(
+            widget.rehearsal.sessions == 0
+                ? '今年はまだ合奏練習の記録がない。'
+                : '日頃の練習：${dynamicsMarkOf(widget.rehearsal.avgDynamics)}'
+                      '（${widget.rehearsal.avgDynamics}）・表現 ${widget.rehearsal.avgExpression}'
+                      '（${widget.rehearsal.sessions} 回）。ここから大きく外れると崩れやすい。',
+            style: theme.textTheme.bodySmall,
+          ),
           const SizedBox(height: 12),
           if (!_started)
             FilledButton.icon(
@@ -142,6 +159,7 @@ class _ConductingPageState extends ConsumerState<ConductingPage> {
               dynamics: _dyn,
               expression: _expr,
               params: widget.params,
+              rehearsal: widget.rehearsal,
               onDynamics: (v) => setState(() => _dyn = v),
               onExpression: (v) => setState(() => _expr = v),
               onNext: () => setState(_commit),
@@ -152,6 +170,7 @@ class _ConductingPageState extends ConsumerState<ConductingPage> {
                 widget.piece,
                 widget.params,
                 ConductingPlan(_steps),
+                rehearsal: widget.rehearsal,
               ),
               fullAuthority: widget.fullAuthority,
               onFinish: () =>
@@ -223,6 +242,7 @@ class _PhraseControl extends StatelessWidget {
     required this.dynamics,
     required this.expression,
     required this.params,
+    required this.rehearsal,
     required this.onDynamics,
     required this.onExpression,
     required this.onNext,
@@ -235,6 +255,7 @@ class _PhraseControl extends StatelessWidget {
   final int dynamics;
   final int expression;
   final ConductingParams params;
+  final RehearsalMemory rehearsal;
   final ValueChanged<int> onDynamics;
   final ValueChanged<int> onExpression;
   final VoidCallback onNext;
@@ -242,12 +263,26 @@ class _PhraseControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final j = ConductingJudge.judge(
+    // 本番と同じ評価（地力・曲との合い方・練習との差）
+    final judged = ConductingJudge.judge(
       params,
       ConductingInput(atMs: 0, dynamics: dynamics, expression: expression),
     );
+    final penalty = RehearsalPenalty.penaltyPermille(
+      rehearsal,
+      dynamics,
+      expression,
+    );
+    final j = RehearsalPenalty.collapses(rehearsal, dynamics, expression)
+        ? ConductingJudgement(
+            multiplierPermille: judged.multiplierPermille,
+            verdict: ConductingVerdict.collapse,
+            reason: '練習と違いすぎて、合奏が崩れる',
+          )
+        : judged;
     final fit = ConductingEvaluator.fit(phrase, dynamics, expression);
-    final total1000 = j.multiplierPermille * fit ~/ 1000;
+    final total1000 =
+        j.multiplierPermille * fit ~/ 1000 * (1000 - penalty) ~/ 1000;
     final color = switch (j.verdict) {
       ConductingVerdict.brilliant => Colors.amber.shade700,
       ConductingVerdict.collapse => theme.colorScheme.error,
@@ -306,6 +341,13 @@ class _PhraseControl extends StatelessWidget {
                     '曲との合い方 ×${(fit / 1000).toStringAsFixed(2)}',
                     style: theme.textTheme.bodySmall,
                   ),
+                  if (penalty > 0)
+                    Text(
+                      '練習との差が大きい ×${((1000 - penalty) / 1000).toStringAsFixed(2)}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.error,
+                      ),
+                    ),
                 ],
               ),
             ),

@@ -92,6 +92,12 @@ abstract class GameState with _$GameState {
     /// 大人編の状態（本編では null）。
     CareerState? career,
 
+    /// 部全体の一時的な調子（引退ショックなど）。
+    @Default(ClubCondition()) ClubCondition condition,
+
+    /// 今年度、日頃どんな音量・表現で練習してきたか（指揮の判定に使う）。
+    @Default(RehearsalMemory()) RehearsalMemory rehearsal,
+
     /// 役職（ID → 役職）。
     @Default(<String, ClubRole>{}) Map<String, ClubRole> roles,
 
@@ -387,10 +393,72 @@ abstract class CareerState with _$CareerState {
 
     /// 解放のもとになった生徒時代の称号（お試しなら null）。
     String? originTitle,
+
+    /// 顧問: 任期の終わりに届いた異動のオファー。
+    @Default(<TransferOffer>[]) List<TransferOffer> transferOffers,
+
+    /// 顧問: これまでに務めた学校（今の学校を含む、古い順）。
+    @Default(<String>[]) List<String> servedSchoolIds,
   }) = _CareerState;
 
   factory CareerState.fromJson(Map<String, dynamic> json) =>
       _$CareerStateFromJson(json);
+}
+
+/// 部全体の一時的な調子。値は「落ち込み」で、毎週少しずつ戻る。
+@freezed
+abstract class ClubCondition with _$ClubCondition {
+  const factory ClubCondition({
+    /// 技術の落ち込み（0..20）。3 年生が抜けた直後など。
+    @Default(0) int techniqueShock,
+
+    /// テンションの落ち込み（0..20）。慕われていた先輩が抜けた直後など。
+    @Default(0) int tensionShock,
+  }) = _ClubCondition;
+
+  factory ClubCondition.fromJson(Map<String, dynamic> json) =>
+      _$ClubConditionFromJson(json);
+}
+
+/// 日頃の練習の記憶（年度ごと）。本番の指示がこれから大きく外れると崩れやすい。
+@freezed
+abstract class RehearsalMemory with _$RehearsalMemory {
+  const factory RehearsalMemory({
+    /// 記録している年度（変わったらリセット）。
+    int? fiscalYear,
+
+    /// 練習してきたダイナミクスの合計（平均 = 合計 / 回数）。
+    @Default(0) int dynamicsSum,
+
+    /// 練習してきた表現力の合計。
+    @Default(0) int expressionSum,
+
+    /// 練習の回数。
+    @Default(0) int sessions,
+  }) = _RehearsalMemory;
+
+  const RehearsalMemory._();
+
+  int get avgDynamics => sessions == 0 ? 50 : dynamicsSum ~/ sessions;
+  int get avgExpression => sessions == 0 ? 50 : expressionSum ~/ sessions;
+
+  factory RehearsalMemory.fromJson(Map<String, dynamic> json) =>
+      _$RehearsalMemoryFromJson(json);
+}
+
+/// 顧問の異動のオファー。
+@freezed
+abstract class TransferOffer with _$TransferOffer {
+  const factory TransferOffer({
+    required String schoolId,
+
+    /// 'promotion'（栄転: より強い部）または 'rebuild'（立て直し: より弱い部）。
+    required String kind,
+    required String reason,
+  }) = _TransferOffer;
+
+  factory TransferOffer.fromJson(Map<String, dynamic> json) =>
+      _$TransferOfferFromJson(json);
 }
 
 /// プレイヤーの実績（エンディング解析用）。

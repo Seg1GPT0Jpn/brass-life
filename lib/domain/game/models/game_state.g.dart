@@ -79,6 +79,12 @@ _GameState _$GameStateFromJson(Map<String, dynamic> json) => _GameState(
   career: json['career'] == null
       ? null
       : CareerState.fromJson(json['career'] as Map<String, dynamic>),
+  condition: json['condition'] == null
+      ? const ClubCondition()
+      : ClubCondition.fromJson(json['condition'] as Map<String, dynamic>),
+  rehearsal: json['rehearsal'] == null
+      ? const RehearsalMemory()
+      : RehearsalMemory.fromJson(json['rehearsal'] as Map<String, dynamic>),
   roles:
       (json['roles'] as Map<String, dynamic>?)?.map(
         (k, e) => MapEntry(k, $enumDecode(_$ClubRoleEnumMap, e)),
@@ -133,6 +139,8 @@ Map<String, dynamic> _$GameStateToJson(_GameState instance) =>
       'setPieces': instance.setPieces,
       'mode': _$GameModeEnumMap[instance.mode]!,
       'career': ?instance.career?.toJson(),
+      'condition': instance.condition.toJson(),
+      'rehearsal': instance.rehearsal.toJson(),
       'roles': instance.roles.map((k, e) => MapEntry(k, _$ClubRoleEnumMap[e]!)),
       'executiveSelectionTurn': ?instance.executiveSelectionTurn,
       'lastConcertYear': ?instance.lastConcertYear,
@@ -373,6 +381,7 @@ const _$PendingEventTypeEnumMap = {
   PendingEventType.instrumentDecision: 'instrumentDecision',
   PendingEventType.pieceSelection: 'pieceSelection',
   PendingEventType.audition: 'audition',
+  PendingEventType.teacherAudition: 'teacherAudition',
   PendingEventType.contest: 'contest',
   PendingEventType.executiveSelection: 'executiveSelection',
   PendingEventType.concert: 'concert',
@@ -500,6 +509,16 @@ _CareerState _$CareerStateFromJson(Map<String, dynamic> json) => _CareerState(
   money: (json['money'] as num?)?.toInt() ?? 0,
   bond: (json['bond'] as num?)?.toInt() ?? 50,
   originTitle: json['originTitle'] as String?,
+  transferOffers:
+      (json['transferOffers'] as List<dynamic>?)
+          ?.map((e) => TransferOffer.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <TransferOffer>[],
+  servedSchoolIds:
+      (json['servedSchoolIds'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const <String>[],
 );
 
 Map<String, dynamic> _$CareerStateToJson(_CareerState instance) =>
@@ -512,6 +531,50 @@ Map<String, dynamic> _$CareerStateToJson(_CareerState instance) =>
       'money': instance.money,
       'bond': instance.bond,
       'originTitle': ?instance.originTitle,
+      'transferOffers': instance.transferOffers.map((e) => e.toJson()).toList(),
+      'servedSchoolIds': instance.servedSchoolIds,
+    };
+
+_ClubCondition _$ClubConditionFromJson(Map<String, dynamic> json) =>
+    _ClubCondition(
+      techniqueShock: (json['techniqueShock'] as num?)?.toInt() ?? 0,
+      tensionShock: (json['tensionShock'] as num?)?.toInt() ?? 0,
+    );
+
+Map<String, dynamic> _$ClubConditionToJson(_ClubCondition instance) =>
+    <String, dynamic>{
+      'techniqueShock': instance.techniqueShock,
+      'tensionShock': instance.tensionShock,
+    };
+
+_RehearsalMemory _$RehearsalMemoryFromJson(Map<String, dynamic> json) =>
+    _RehearsalMemory(
+      fiscalYear: (json['fiscalYear'] as num?)?.toInt(),
+      dynamicsSum: (json['dynamicsSum'] as num?)?.toInt() ?? 0,
+      expressionSum: (json['expressionSum'] as num?)?.toInt() ?? 0,
+      sessions: (json['sessions'] as num?)?.toInt() ?? 0,
+    );
+
+Map<String, dynamic> _$RehearsalMemoryToJson(_RehearsalMemory instance) =>
+    <String, dynamic>{
+      'fiscalYear': ?instance.fiscalYear,
+      'dynamicsSum': instance.dynamicsSum,
+      'expressionSum': instance.expressionSum,
+      'sessions': instance.sessions,
+    };
+
+_TransferOffer _$TransferOfferFromJson(Map<String, dynamic> json) =>
+    _TransferOffer(
+      schoolId: json['schoolId'] as String,
+      kind: json['kind'] as String,
+      reason: json['reason'] as String,
+    );
+
+Map<String, dynamic> _$TransferOfferToJson(_TransferOffer instance) =>
+    <String, dynamic>{
+      'schoolId': instance.schoolId,
+      'kind': instance.kind,
+      'reason': instance.reason,
     };
 
 _Achievement _$AchievementFromJson(Map<String, dynamic> json) => _Achievement(
