@@ -1,6 +1,6 @@
 import '../game/models/piece.dart';
 
-/// 曲の音源の場所。同梱音源があればそれを、なければ Web のリンクを使う。
+/// アプリ内で再生する音源の場所。同梱音源があればそれを、なければネット配信を使う。
 sealed class PieceAudio {
   const PieceAudio();
 }
@@ -11,9 +11,9 @@ class AssetPieceAudio extends PieceAudio {
   final String assetPath;
 }
 
-/// Web 上の試聴ページ（一時的。ブラウザで開く）。
-class WebPieceAudio extends PieceAudio {
-  const WebPieceAudio(this.url);
+/// ネット経由でアプリ内再生する音声ファイル（要インターネット接続）。
+class StreamPieceAudio extends PieceAudio {
+  const StreamPieceAudio(this.url);
   final Uri url;
 }
 
@@ -27,6 +27,9 @@ abstract interface class PieceRepository {
 
   Piece? byId(String id);
 
-  /// 曲の音源。同梱音源（assets/audio/）が見つかればそれを優先する。
+  /// アプリ内で再生する音源。同梱音源（assets/audio/）が見つかればそれを優先する。
   PieceAudio audioOf(Piece piece);
+
+  /// 曲のページ（ブラウザで開く用）。
+  Uri pageOf(Piece piece);
 }

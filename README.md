@@ -131,8 +131,13 @@ lib/
 - `Piece`（`domain/game/models/piece.dart`）: ID・曲名・年（1〜6）・番号（I〜IV）・種別・URL・同梱音源パス・要求ステータス。
 - 全24曲のマスターは `SetPieces`。UI からは `PieceRepository`（実装は `data/repositories/master_piece_repository.dart`）経由で使う。
 - 部の実力（`PieceFit.bandStats`）と曲の要求の相性が、選曲とコンクールの評価に反映される。
-- 音源をオフラインで鳴らす準備: `assets/audio/y{年}_{番号}.mp3`（例: `y1_I.mp3`、`.wav` / `.m4a` も可）を置くと、
-  リポジトリが Suno のリンクの代わりにその音源を返す（アプリ内の再生処理は今後追加）。
+- **アプリ内で聴ける**: 選曲画面・課題曲一覧の ▶ ボタンで再生（画面下のミニプレイヤーで一時停止・停止）。
+  コンクール本番の演出中は、その年の課題曲が流れる。
+  - 既定では Suno の配信用 MP3（`https://cdn1.suno.ai/{曲ID}.mp3`）をネット経由で再生する。
+  - **オフラインで鳴らすには** `dart run tool/download_pieces.dart` を実行すると、24 曲を
+    `assets/audio/y{年}_{番号}.mp3`（例: `y1_I.mp3`）に保存する。手動で置く場合も同じ名前で（`.wav` / `.m4a` も可）。
+    置いた音源はネットより優先され、`flutter run` / `build` をやり直すと反映される。
+  - 再生部分は `AudioEngine`（`presentation/game/pieces/piece_player.dart`）として分けてあり、実装は audioplayers。
 
 ### ジオラマ（`domain/game/scene` と `presentation/game/scene`）
 

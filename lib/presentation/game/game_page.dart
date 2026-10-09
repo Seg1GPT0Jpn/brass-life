@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'pieces/piece_widgets.dart';
 import 'game_controller.dart';
 import 'home_tab.dart';
 import 'members_tab.dart';
@@ -67,6 +68,7 @@ class GamePage extends ConsumerWidget {
             ],
           ),
         ),
+        bottomNavigationBar: const NowPlayingBar(),
         body: const TabBarView(
           children: [HomeTab(), MembersTab(), RelationsTab(), RecordsTab()],
         ),

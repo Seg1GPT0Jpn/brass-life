@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/game/engine/contest_engine.dart';
 import '../../domain/game/engine/executive_engine.dart';
 import '../../domain/game/engine/performance.dart';
+import '../../domain/game/engine/piece_selection.dart';
 import '../../domain/game/engine/relations.dart';
 import '../../domain/game/engine/time_manager.dart';
 import '../../domain/game/master/approach_cards.dart';
@@ -12,6 +13,7 @@ import '../../domain/game/models/game_enums.dart';
 import '../../domain/value_objects/school_enums.dart';
 import '../common/widgets/common_widgets.dart';
 import 'game_controller.dart';
+import 'pieces/piece_player.dart';
 import 'scene/performance_stage.dart';
 
 /// イベント結果のダイアログ。
@@ -93,6 +95,11 @@ class _CardEventPanelState extends ConsumerState<CardEventPanel> {
                   s.contestMembers.contains(a.id)))
             a,
       ];
+      // コンクール本番では今年の課題曲を流す（ネット配信なら読み込みに少しかかる）
+      final piece = PieceSelection(ctx).currentOf(s);
+      if (widget.type == PendingEventType.contest && piece != null) {
+        ref.read(piecePlayerProvider.notifier).play(piece);
+      }
       final lines = switch (widget.type) {
         PendingEventType.audition => vm.resolveAudition(card),
         PendingEventType.contest => vm.resolveContest(card),

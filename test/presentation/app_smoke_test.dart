@@ -245,7 +245,8 @@ void main() {
           scrollable: homeScrollable(),
         );
         await tester.pumpAndSettle();
-        expect(find.text('Suno で聴く'), findsWidgets);
+        expect(find.text('Suno で開く'), findsWidgets);
+        expect(find.byTooltip('この曲を聴く'), findsWidgets);
         await tester.tap(find.text('青空とファンファーレ'));
         await tester.pumpAndSettle();
         final push = find.text('「青空とファンファーレ」を推す');

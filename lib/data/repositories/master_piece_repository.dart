@@ -9,7 +9,7 @@ import '../../domain/repositories/piece_repository.dart';
 /// 音源は次の順で探す:
 /// 1. 曲データの [Piece.audioAsset]
 /// 2. 命名規則 `assets/audio/y{年}_{番号}.mp3`（または .wav / .m4a）で同梱されたファイル
-/// 3. どちらもなければ Suno の Web リンク
+/// 3. どちらもなければ Suno の配信用 MP3 をネット経由で再生
 ///
 /// 2 を使うには [loadBundledAudio] を一度呼んで、同梱アセットの一覧を読み込む。
 class MasterPieceRepository implements PieceRepository {
@@ -32,7 +32,7 @@ class MasterPieceRepository implements PieceRepository {
           manifest.listAssets().where((a) => a.startsWith('assets/audio/')),
         );
     } on Exception {
-      // 一覧が読めなければ Web リンクのまま
+      // 一覧が読めなければネット配信のまま
     }
   }
 
@@ -56,6 +56,9 @@ class MasterPieceRepository implements PieceRepository {
       final path = '$base.$ext';
       if (_bundled.contains(path)) return AssetPieceAudio(path);
     }
-    return WebPieceAudio(Uri.parse(piece.url));
+    return StreamPieceAudio(Uri.parse(piece.streamUrl));
   }
+
+  @override
+  Uri pageOf(Piece piece) => Uri.parse(piece.url);
 }

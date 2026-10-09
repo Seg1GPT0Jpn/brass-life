@@ -61,8 +61,11 @@ class Piece {
   final String category;
   final String type;
 
-  /// 試聴用の Web リンク（Suno）。
+  /// 曲ページの Web リンク（Suno）。
   final String url;
+
+  /// アプリ内で再生するための音声ファイルの URL（Suno の配信用 MP3）。
+  String get streamUrl => 'https://cdn1.suno.ai/$id.mp3';
 
   /// 同梱した音源のアセットパス（未同梱なら null。例: assets/audio/y1_I.mp3）。
   final String? audioAsset;
