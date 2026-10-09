@@ -1,3 +1,4 @@
+import 'package:brass_life/domain/game/master/free_pieces.dart';
 import 'package:brass_life/domain/game/master/piece_file_matcher.dart';
 import 'package:brass_life/domain/game/master/set_pieces.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -36,6 +37,17 @@ void main() {
       for (final p in SetPieces.all) '${p.title}.mp3',
     ], SetPieces.all);
     expect(m, hasLength(24));
+    for (final e in m.entries) {
+      expect(e.value, '${e.key.title}.mp3');
+    }
+  });
+
+  test('課題曲 24 曲と自由曲 10 曲の 34 曲も、ファイル名から取り違えずに当たる', () {
+    const all = [...SetPieces.all, ...FreePieces.all];
+    final m = PieceFileMatcher.match([
+      for (final p in all) '${p.title}.mp3',
+    ], all);
+    expect(m, hasLength(34));
     for (final e in m.entries) {
       expect(e.value, '${e.key.title}.mp3');
     }

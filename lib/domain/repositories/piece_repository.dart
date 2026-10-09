@@ -17,10 +17,13 @@ class StreamPieceAudio extends PieceAudio {
   final Uri url;
 }
 
-/// 課題曲のマスターデータ。
+/// 課題曲・自由曲のマスターデータ。
 abstract interface class PieceRepository {
-  /// 全 24 曲（年・番号順）。
+  /// 全曲（課題曲 24 曲を年・番号順、続いて自由曲 10 曲）。
   List<Piece> all();
+
+  /// 自由曲（番号順）。
+  List<Piece> freePieces();
 
   /// [year] 年目（1..6）の課題曲 I〜IV。
   List<Piece> byYear(int year);

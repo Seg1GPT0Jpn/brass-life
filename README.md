@@ -149,10 +149,11 @@ lib/
 - 入力が必要なイベントは `pending` に設定され、解決されるまで週は進みません。
 - 関係性は有向ベクトル（好感・信頼・ライバル）で、変化には必ず理由つきの `MemoryTag` が残ります。
 
-### 課題曲（`domain/game/master/set_pieces.dart` ほか）
+### 課題曲・自由曲（`domain/game/master/set_pieces.dart`・`free_pieces.dart` ほか）
 
 - `Piece`（`domain/game/models/piece.dart`）: ID・曲名・年（1〜6）・番号（I〜IV）・種別・URL・同梱音源パス・要求ステータス。
-- 全24曲のマスターは `SetPieces`。UI からは `PieceRepository`（実装は `data/repositories/master_piece_repository.dart`）経由で使う。
+- 課題曲 24 曲のマスターは `SetPieces`、自由曲 10 曲（難易度 B / A / S / SS、年は 0 = どの年でも）は `FreePieces`。
+  曲一覧画面の「自由曲」タブで聴ける（選曲・コンクールへの組み込みはまだ）。UI からは `PieceRepository`（実装は `data/repositories/master_piece_repository.dart`）経由で使う。
 - 部の実力（`PieceFit.bandStats`）と曲の要求の相性が、選曲とコンクールの評価に反映される。
 - **アプリ内で聴ける**: 選曲画面・課題曲一覧の ▶ ボタンで再生（画面下のミニプレイヤーで一時停止・停止）。
   コンクール本番の演出中は、その年の課題曲が流れる。
@@ -161,8 +162,8 @@ lib/
     曲カードの中に表示して再生する。無料プランの公開曲でも聴ける（曲カードの ♫ ボタンでいつでも表示できる）。
   - **Suno から手動で保存した音源を取り込むには** 各曲ページの「…」→ Download → MP3 Audio で保存し、
     `dart run tool/import_pieces.dart <保存したフォルダ>` を実行する（ファイル名の曲名から自動で振り分ける）。
-  - **オフラインで鳴らすには** `dart run tool/download_pieces.dart` を実行すると、24 曲を
-    `assets/audio/y{年}_{番号}.mp3`（例: `y1_I.mp3`）に保存する。手動で置く場合も同じ名前で（`.wav` / `.m4a` も可）。
+  - **オフラインで鳴らすには** `dart run tool/download_pieces.dart` を実行すると、34 曲を
+    `assets/audio/y{年}_{番号}.mp3`（例: `y1_I.mp3`）、自由曲は `assets/audio/free_{番号}.mp3` に保存する。手動で置く場合も同じ名前で（`.wav` / `.m4a` も可）。
     置いた音源はネットより優先され、`flutter run` / `build` をやり直すと反映される。
   - 再生部分は `AudioEngine`（`presentation/game/pieces/piece_player.dart`）として分けてあり、実装は audioplayers。
 

@@ -1,18 +1,21 @@
 import 'package:brass_life/core/rng/seed_code.dart';
+import 'package:brass_life/data/repositories/master_piece_repository.dart';
 import 'package:brass_life/domain/entities/world.dart';
 import 'package:brass_life/domain/game/engine/game_context.dart';
 import 'package:brass_life/domain/game/engine/piece_fit.dart';
 import 'package:brass_life/domain/game/engine/piece_selection.dart';
 import 'package:brass_life/domain/game/engine/time_manager.dart';
+import 'package:brass_life/domain/game/master/free_pieces.dart';
 import 'package:brass_life/domain/game/master/set_pieces.dart';
 import 'package:brass_life/domain/game/models/game_enums.dart';
 import 'package:brass_life/domain/game/models/game_state.dart';
 import 'package:brass_life/domain/game/models/piece.dart';
+import 'package:brass_life/domain/repositories/piece_repository.dart';
 import 'package:brass_life/domain/services/world_generation/world_generator.dart';
 import 'package:brass_life/domain/value_objects/instrument.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// 課題曲 24 曲のマスターデータと、選曲・コンクールへの反映。
+/// 課題曲 24 曲・自由曲 10 曲のマスターデータと、選曲・コンクールへの反映。
 void main() {
   group('マスターデータ', () {
     test('6 年 × I〜IV の 24 曲がそろい、ID は一意', () {
@@ -55,6 +58,98 @@ void main() {
       expect(
         SetPieces.byYear(1).first.conventionalAssetPath,
         'assets/audio/y1_I.mp3',
+      );
+      expect(
+        FreePieces.all.first.conventionalAssetPath,
+        'assets/audio/free_1.mp3',
+      );
+    });
+  });
+
+  group('自由曲', () {
+    test('10 曲がそろい、ID は一意で URL の曲 ID と一致する', () {
+      expect(FreePieces.all, hasLength(10));
+      expect(FreePieces.all.map((p) => p.id).toSet(), hasLength(10));
+      expect(FreePieces.all.map((p) => p.category), [
+        for (var i = 1; i <= 10; i++) '$i',
+      ]);
+      for (final p in FreePieces.all) {
+        expect(p.type, Piece.freeType);
+        expect(p.isFree, isTrue);
+        expect(p.year, 0);
+        expect(p.url, startsWith('https://suno.com/song/${p.id}?sh='));
+        expect(FreePieces.grades, contains(p.grade));
+        expect(p.requiredStats, isNotEmpty);
+        for (final e in p.requiredStats.entries) {
+          expect(PieceStat.byKey(e.key), isNotNull, reason: e.key);
+          expect(e.value, inInclusiveRange(1, 100));
+        }
+        expect(FreePieces.byId(p.id), same(p));
+      }
+      // 課題曲と ID が重ならない
+      final setIds = SetPieces.all.map((p) => p.id).toSet();
+      expect(FreePieces.all.where((p) => setIds.contains(p.id)), isEmpty);
+    });
+
+    test('難易度ランクの内訳と、ランクが上がるほど難しい', () {
+      expect(
+        {for (final g in FreePieces.grades) g: FreePieces.byGrade(g).length},
+        {'B': 2, 'A': 4, 'S': 2, 'SS': 2},
+      );
+      int avg(String g) {
+        final ps = FreePieces.byGrade(g);
+        return ps.fold(0, (a, p) => a + p.difficulty) ~/ ps.length;
+      }
+
+      for (var i = 0; i < FreePieces.grades.length - 1; i++) {
+        final g = FreePieces.grades[i];
+        final next = FreePieces.grades[i + 1];
+        for (final easy in FreePieces.byGrade(g)) {
+          for (final hard in FreePieces.byGrade(next)) {
+            expect(hard.difficulty, greaterThan(easy.difficulty));
+          }
+        }
+        expect(avg(next), greaterThan(avg(g)));
+      }
+      // SS は課題曲の最難関より難しい
+      final hardestSet = SetPieces.all
+          .map((p) => p.difficulty)
+          .reduce((a, b) => a > b ? a : b);
+      for (final p in FreePieces.byGrade('SS')) {
+        expect(p.difficulty, greaterThan(hardestSet));
+      }
+    });
+
+    test('表示名と、リポジトリからの取得', () {
+      final p = FreePieces.byId('e6cfa493-cb95-488e-8ab6-992e6ee690be')!;
+      expect(p.title, '天馬の飛翔');
+      expect(p.label, '自由曲「天馬の飛翔」');
+      expect(p.heading, '自由曲 A「天馬の飛翔」');
+      expect(SetPieces.all.first.heading, '1年目 I「青空とファンファーレ」');
+      final repo = MasterPieceRepository();
+      expect(repo.all(), hasLength(34));
+      expect(repo.freePieces(), same(FreePieces.all));
+      expect(repo.byId(p.id), same(p));
+      expect(repo.byYear(1), hasLength(4));
+      expect(repo.pageOf(p).toString(), p.url);
+      expect(
+        repo.audioOf(p),
+        isA<StreamPieceAudio>().having(
+          (a) => a.url.toString(),
+          'url',
+          'https://cdn1.suno.ai/${p.id}.mp3',
+        ),
+      );
+      final bundled = MasterPieceRepository(
+        bundledAssets: {'assets/audio/free_5.wav'},
+      );
+      expect(
+        bundled.audioOf(p),
+        isA<AssetPieceAudio>().having(
+          (a) => a.assetPath,
+          'path',
+          'assets/audio/free_5.wav',
+        ),
       );
     });
   });

@@ -1,14 +1,16 @@
 import 'package:flutter/services.dart';
 
+import '../../domain/game/master/free_pieces.dart';
 import '../../domain/game/master/set_pieces.dart';
 import '../../domain/game/models/piece.dart';
 import '../../domain/repositories/piece_repository.dart';
 
-/// コードに埋め込んだ課題曲マスター（[SetPieces]）を返すリポジトリ。
+/// コードに埋め込んだ課題曲・自由曲マスター（[SetPieces]・[FreePieces]）を返すリポジトリ。
 ///
 /// 音源は次の順で探す:
 /// 1. 曲データの [Piece.audioAsset]
-/// 2. 命名規則 `assets/audio/y{年}_{番号}.mp3`（または .wav / .m4a）で同梱されたファイル
+/// 2. 命名規則 `assets/audio/y{年}_{番号}.mp3` / `assets/audio/free_{番号}.mp3`
+///    （または .wav / .m4a）で同梱されたファイル
 /// 3. どちらもなければ Suno の配信用 MP3 をネット経由で再生
 ///
 /// 2 を使うには [loadBundledAudio] を一度呼んで、同梱アセットの一覧を読み込む。
@@ -37,13 +39,18 @@ class MasterPieceRepository implements PieceRepository {
   }
 
   @override
-  List<Piece> all() => SetPieces.all;
+  List<Piece> all() => _all;
+
+  static const _all = [...SetPieces.all, ...FreePieces.all];
+
+  @override
+  List<Piece> freePieces() => FreePieces.all;
 
   @override
   List<Piece> byYear(int year) => SetPieces.byYear(year);
 
   @override
-  Piece? byId(String id) => SetPieces.byId(id);
+  Piece? byId(String id) => SetPieces.byId(id) ?? FreePieces.byId(id);
 
   @override
   PieceAudio audioOf(Piece piece) {

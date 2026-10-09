@@ -65,7 +65,7 @@ class PieceCard extends ConsumerWidget {
                     radius: 16,
                     backgroundColor: theme.colorScheme.secondaryContainer,
                     child: Text(
-                      piece.category,
+                      piece.isFree ? (piece.grade ?? '自') : piece.category,
                       style: theme.textTheme.labelLarge,
                     ),
                   ),
@@ -76,7 +76,7 @@ class PieceCard extends ConsumerWidget {
                       children: [
                         Text(piece.title, style: theme.textTheme.titleMedium),
                         Text(
-                          '${piece.year}年目の${piece.type} ${piece.category}'
+                          '${piece.isFree ? '${piece.type}（難易度 ${piece.grade}）' : '${piece.year}年目の${piece.type} ${piece.category}'}'
                           '　難しさ ${piece.difficulty}',
                           style: theme.textTheme.bodySmall,
                         ),
@@ -325,7 +325,7 @@ class NowPlayingBar extends ConsumerWidget {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      '${piece.year}年目 ${piece.category}「${piece.title}」'
+                      '${piece.heading}'
                       '${st.fromAsset ? '' : '（ネット再生）'}',
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodyMedium,

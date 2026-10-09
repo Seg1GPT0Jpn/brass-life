@@ -6,7 +6,7 @@ import '../../../domain/game/engine/piece_fit.dart';
 import '../game_controller.dart';
 import 'piece_widgets.dart';
 
-/// 課題曲の一覧（6 年分・24 曲）。
+/// 曲の一覧（課題曲 6 年分・24 曲と、自由曲 10 曲）。
 class PieceLibraryPage extends ConsumerWidget {
   const PieceLibraryPage({super.key});
 
@@ -23,16 +23,17 @@ class PieceLibraryPage extends ConsumerWidget {
         ? null
         : PieceFit(ctx).bandStats(s, PieceFit(ctx).candidates(s));
     return DefaultTabController(
-      length: 6,
+      length: 7,
       initialIndex: (currentYear - 1).clamp(0, 5),
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('課題曲'),
+          title: const Text('課題曲・自由曲'),
           bottom: TabBar(
             isScrollable: true,
             tabs: [
               for (var y = 1; y <= 6; y++)
                 Tab(text: '${y <= 3 ? '中$y' : '高${y - 3}'}（$y年目）'),
+              const Tab(text: '自由曲'),
             ],
           ),
         ),
@@ -58,6 +59,21 @@ class PieceLibraryPage extends ConsumerWidget {
                     ),
                 ],
               ),
+            ListView(
+              padding: const EdgeInsets.all(12),
+              children: [
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 8),
+                  child: Text('どの年でも演奏できる自由曲です。難易度は B < A < S < SS。'),
+                ),
+                for (final p in repo.freePieces())
+                  PieceCard(
+                    piece: p,
+                    bandStats: stats,
+                    badge: chosen.contains(p.id) ? '演奏した曲' : null,
+                  ),
+              ],
+            ),
           ],
         ),
       ),

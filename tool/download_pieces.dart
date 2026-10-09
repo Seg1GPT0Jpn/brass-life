@@ -1,13 +1,14 @@
-// 課題曲 24 曲の音源を Suno からダウンロードして assets/audio/ に保存する。
+// 課題曲 24 曲・自由曲 10 曲の音源を Suno からダウンロードして assets/audio/ に保存する。
 //
 //   dart run tool/download_pieces.dart          # 未ダウンロードの曲だけ
 //   dart run tool/download_pieces.dart --force  # すべて取り直す
 //
-// 保存先は assets/audio/y{年}_{番号}.mp3。置いた音源はアプリ内でオフライン再生に使われる
+// 保存先は assets/audio/y{年}_{番号}.mp3（自由曲は free_{番号}.mp3）。置いた音源はアプリ内でオフライン再生に使われる
 // （flutter run / build をやり直すと反映される）。
 // ignore_for_file: avoid_print
 import 'dart:io';
 
+import 'package:brass_life/domain/game/master/free_pieces.dart';
 import 'package:brass_life/domain/game/master/set_pieces.dart';
 
 Future<void> main(List<String> args) async {
@@ -17,9 +18,9 @@ Future<void> main(List<String> args) async {
   final client = HttpClient();
   var ok = 0;
   var failed = 0;
-  for (final piece in SetPieces.all) {
+  for (final piece in _pieces) {
     final file = File(piece.conventionalAssetPath);
-    final name = '${piece.year}年目 ${piece.category}「${piece.title}」';
+    final name = piece.heading;
     if (file.existsSync() && file.lengthSync() > 0 && !force) {
       print('済  $name');
       ok++;
@@ -81,3 +82,5 @@ List<String> _candidates(String id) => [
   'https://cdn2.suno.ai/$id.mp3',
   'https://audiopipe.suno.ai/?item_id=$id',
 ];
+
+const _pieces = [...SetPieces.all, ...FreePieces.all];
