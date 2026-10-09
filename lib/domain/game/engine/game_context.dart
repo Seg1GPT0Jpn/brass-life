@@ -65,6 +65,14 @@ class GameContext {
 
   Npc advisor(GameState s) => index.npcById[club(s).advisorId]!;
 
+  /// 画面・記録に出す日付（本編は「（中1）」、大人編は「（1年目）」）。
+  String dateLabelOf(GameState s, [int? turn]) {
+    final d = calendar.dateOf(turn ?? s.turn);
+    return s.mode.isCareer
+        ? '${d.label}（${s.mode.label}${d.academicYearIndex + 1}年目）'
+        : d.labelWithStage;
+  }
+
   /// 現在の部員のうち部活動に参加している者（引退した 3 年生を除く。順序は roster の順）。
   List<NpcState> activeMembers(GameState s) => [
     for (final id in s.roster)

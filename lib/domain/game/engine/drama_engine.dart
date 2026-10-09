@@ -1,3 +1,4 @@
+import '../../career/game_mode.dart';
 import '../../../core/rng/rng_stream.dart';
 import '../../entities/memory_tag.dart';
 import '../../value_objects/instrument.dart';
@@ -75,7 +76,7 @@ class DramaEngine {
             npcs[id]!.motivation,
           ),
       // 退部中のプレイヤーは部の人間関係の輪から外れる（引退後は従来どおり）。
-      if (!player.quitClub)
+      if (!player.quitClub && s.mode == GameMode.student)
         _Member(
           Relations.player,
           player.grade,

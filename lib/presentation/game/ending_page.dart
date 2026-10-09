@@ -98,7 +98,7 @@ class EndingPage extends ConsumerWidget {
                 ),
               ),
               SectionCard(
-                title: '6年間のまとめ',
+                title: s.mode.isCareer ? '任期のまとめ' : '6年間のまとめ',
                 child: Column(
                   children: [for (final (k, v) in e.stats) KvRow(k, v)],
                 ),
@@ -107,13 +107,15 @@ class EndingPage extends ConsumerWidget {
               FilledButton.icon(
                 onPressed: () => context.go('/'),
                 icon: const Icon(Icons.home),
-                label: const Text('タイトルへ（別の Seed で新しい人生へ）'),
+                label: Text(
+                  s.mode.isCareer ? 'タイトルへ' : 'タイトルへ（別の Seed で新しい人生へ）',
+                ),
               ),
               const SizedBox(height: 8),
               OutlinedButton.icon(
                 onPressed: () => context.go('/game'),
                 icon: const Icon(Icons.history_edu),
-                label: const Text('6年間の記録を見返す'),
+                label: Text(s.mode.isCareer ? '任期中の記録を見返す' : '6年間の記録を見返す'),
               ),
               const SizedBox(height: 32),
             ],

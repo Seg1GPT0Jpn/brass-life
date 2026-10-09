@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../domain/career/game_mode.dart';
+import '../presentation/career/career_setup_page.dart';
 import '../presentation/debug/memory_log/memory_log_page.dart';
 import '../presentation/debug/npc_detail/npc_detail_page.dart';
 import '../presentation/debug/npc_list/npc_list_page.dart';
@@ -37,6 +39,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/create',
         builder: (_, _) => const CharacterCreationPage(),
+      ),
+      GoRoute(
+        path: '/career/:mode',
+        builder: (_, state) => CareerSetupPage(
+          mode: GameMode.values.byName(state.pathParameters['mode']!),
+        ),
       ),
       GoRoute(
         path: '/game',

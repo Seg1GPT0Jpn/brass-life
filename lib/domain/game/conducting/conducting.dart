@@ -160,3 +160,186 @@ class ConductingSession {
       ? (totalPermille - 1000) ~/ 50
       : -((1000 - totalPermille) ~/ 50);
 }
+
+// ───────────── 曲の構成（フレーズ）と、本番の指揮プラン ─────────────
+
+/// 曲の 1 区間。理想のダイナミクス・表現力に近いほど「曲に合った指揮」になる。
+class ConductingPhrase {
+  const ConductingPhrase(this.label, this.idealDynamics, this.idealExpression);
+
+  final String label;
+  final int idealDynamics;
+  final int idealExpression;
+
+  /// 強弱記号での目安。
+  String get dynamicsMark => dynamicsMarkOf(idealDynamics);
+}
+
+String dynamicsMarkOf(int d) => switch (d) {
+  < 12 => 'ppp',
+  < 25 => 'pp',
+  < 38 => 'p',
+  < 50 => 'mp',
+  < 62 => 'mf',
+  < 75 => 'f',
+  < 88 => 'ff',
+  _ => 'fff',
+};
+
+/// 曲の構成。番号（I〜IV）ごとの性格で決まる（乱数なし）。
+abstract final class PieceStructure {
+  static List<ConductingPhrase> of(Piece piece) => switch (piece.category) {
+    'I' => const [
+      ConductingPhrase('ファンファーレ', 72, 45),
+      ConductingPhrase('行進', 62, 40),
+      ConductingPhrase('中間部（トリオ）', 35, 65),
+      ConductingPhrase('再現', 70, 50),
+      ConductingPhrase('コーダ', 85, 60),
+    ],
+    'II' => const [
+      ConductingPhrase('静かな序奏', 22, 55),
+      ConductingPhrase('歌い出し', 40, 70),
+      ConductingPhrase('高まり', 60, 80),
+      ConductingPhrase('クライマックス', 85, 90),
+      ConductingPhrase('余韻', 15, 65),
+    ],
+    'III' => const [
+      ConductingPhrase('つかみ', 70, 60),
+      ConductingPhrase('ブレイク', 40, 50),
+      ConductingPhrase('ソロ回し', 55, 85),
+      ConductingPhrase('盛り上がり', 82, 75),
+      ConductingPhrase('キメ', 75, 65),
+    ],
+    _ => const [
+      ConductingPhrase('不穏な導入', 18, 60),
+      ConductingPhrase('嵐', 88, 70),
+      ConductingPhrase('静寂', 8, 75),
+      ConductingPhrase('再燃', 75, 80),
+      ConductingPhrase('終結', 95, 85),
+    ],
+  };
+}
+
+/// 本番の指揮プラン（フレーズごとのスライダーの位置）。
+class ConductingPlan {
+  const ConductingPlan(this.steps);
+
+  /// フレーズ順の (ダイナミクス, 表現力)。
+  final List<(int, int)> steps;
+
+  /// 選択ログ用の文字列（例: "60.50-80.70"）。
+  String encode() => steps.map((e) => '${e.$1}.${e.$2}').join('-');
+
+  static ConductingPlan? decode(String? s) {
+    if (s == null || s.isEmpty) return null;
+    final steps = <(int, int)>[];
+    for (final part in s.split('-')) {
+      final xy = part.split('.');
+      if (xy.length != 2) return null;
+      final d = int.tryParse(xy[0]);
+      final e = int.tryParse(xy[1]);
+      if (d == null || e == null) return null;
+      steps.add((d.clamp(0, 100), e.clamp(0, 100)));
+    }
+    return ConductingPlan(steps);
+  }
+}
+
+/// 1 フレーズの評価（地力の判定 × 曲に合っているか）。
+class PhraseResult {
+  const PhraseResult({
+    required this.phrase,
+    required this.dynamics,
+    required this.expression,
+    required this.judgement,
+    required this.fitPermille,
+  });
+
+  final ConductingPhrase phrase;
+  final int dynamics;
+  final int expression;
+  final ConductingJudgement judgement;
+
+  /// 曲の性格に合っているか（千分率。理想どおりで 1100、大きく外すと 850）。
+  final int fitPermille;
+
+  int get permille => judgement.multiplierPermille * fitPermille ~/ 1000;
+}
+
+/// 指揮プラン全体の評価。
+class ConductingResult {
+  const ConductingResult(this.phrases);
+
+  final List<PhraseResult> phrases;
+
+  int get totalPermille => phrases.isEmpty
+      ? 1000
+      : phrases.fold(0, (a, p) => a + p.permille) ~/ phrases.length;
+
+  int get collapses => phrases
+      .where((p) => p.judgement.verdict == ConductingVerdict.collapse)
+      .length;
+
+  int get brilliants => phrases
+      .where((p) => p.judgement.verdict == ConductingVerdict.brilliant)
+      .length;
+
+  /// 演奏評価への補正（倍率 1.0 → 0、1.3 → +6、0.5 → −10）。
+  int get bonus => totalPermille >= 1000
+      ? (totalPermille - 1000) ~/ 50
+      : -((1000 - totalPermille) ~/ 50);
+
+  /// 結果の要約（ログ用）。
+  List<String> summary() {
+    final lines = <String>[];
+    for (final p in phrases) {
+      if (p.judgement.verdict == ConductingVerdict.collapse) {
+        lines.add('「${p.phrase.label}」で${p.judgement.reason}。');
+      } else if (p.judgement.verdict == ConductingVerdict.brilliant &&
+          p.fitPermille >= 1050) {
+        lines.add('「${p.phrase.label}」の攻めた指揮が決まった！');
+      }
+    }
+    lines.add(
+      '指揮の出来：${(totalPermille / 1000).toStringAsFixed(2)} 倍'
+      '（会心 $brilliants・崩壊 $collapses）',
+    );
+    return lines;
+  }
+}
+
+abstract final class ConductingEvaluator {
+  /// フレーズの性格に合っているか（理想との距離で 850〜1100）。
+  static int fit(ConductingPhrase p, int dynamics, int expression) {
+    final diff =
+        (dynamics - p.idealDynamics).abs() +
+        (expression - p.idealExpression).abs();
+    return (1100 - diff * 3).clamp(850, 1100);
+  }
+
+  /// プランを評価する。フレーズより短いプランは「指示なし（50, 50）」で補う。
+  static ConductingResult evaluate(
+    Piece piece,
+    ConductingParams params,
+    ConductingPlan plan,
+  ) {
+    final phrases = PieceStructure.of(piece);
+    return ConductingResult([
+      for (var i = 0; i < phrases.length; i++)
+        () {
+          final (d, e) = i < plan.steps.length ? plan.steps[i] : (50, 50);
+          final j = ConductingJudge.judge(
+            params,
+            ConductingInput(atMs: i, dynamics: d, expression: e),
+          );
+          return PhraseResult(
+            phrase: phrases[i],
+            dynamics: d,
+            expression: e,
+            judgement: j,
+            fitPermille: fit(phrases[i], d, e),
+          );
+        }(),
+    ]);
+  }
+}

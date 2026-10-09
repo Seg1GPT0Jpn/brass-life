@@ -1,3 +1,4 @@
+import '../../career/game_mode.dart';
 import '../../entities/memory_tag.dart';
 import '../master/set_pieces.dart';
 import '../models/game_enums.dart';
@@ -23,6 +24,7 @@ class PieceSelection {
       SetPieces.byYear(ctx.calendar.dateOf(s.turn).academicYearIndex + 1);
 
   bool hasVoice(GameState s) {
+    if (s.mode == GameMode.teacher) return true;
     final role = s.roles[Relations.player];
     return role == ClubRole.captain ||
         role == ClubRole.viceCaptain ||

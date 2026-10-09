@@ -1,117 +1,120 @@
-/// 大人編（Phase 8）の各モードの状態とコマンド。
-///
-/// いまは器（データの形）だけを定義している。週の進行・判定は本編の
-/// TimeManager / DramaEngine を流用し、モードごとに「プレイヤーが選べる行動」と
-/// 「プレイヤーが持つ資源」を差し替える設計にする。
+/// 大人編（キャリアモード）のコマンドと練習メニュー。
 library;
 
-// ───────────── 顧問モード ─────────────
+import 'game_mode.dart';
 
-/// 顧問の週の指示。
-enum TeacherCommand {
-  practiceMenu('練習メニューの指示', '基礎・パート・合奏・休養の配分を決める。部全体の熟練度と疲労が動く。'),
-  auditionDecision('オーディションの合否', '誰をコンクールメンバーにするかを決める。選ばれなかった生徒のメンタルに響く。'),
-  pieceDecision('選曲', '課題曲を決める（生徒の意見を聞くかどうかも選べる）。'),
-  counseling('面談', '生徒ひとりと話す。ストレスと心の傷を和らげる。');
+/// コマンドの相手。
+enum CommandTarget { none, member, school }
 
-  const TeacherCommand(this.label, this.description);
-  final String label;
-  final String description;
-}
+/// 大人編の週の行動。モードごとに使えるものが決まっている。
+enum CareerCommand {
+  // ── 顧問 ──
+  watch(GameMode.teacher, '見守る', '練習メニューどおりに任せる。', CommandTarget.none),
+  encourage(GameMode.teacher, '全体を激励', '部全体のやる気を上げる。', CommandTarget.none),
+  counseling(
+    GameMode.teacher,
+    '面談',
+    '生徒ひとりと話す。ストレスが下がり、やる気と信頼が上がる。',
+    CommandTarget.member,
+  ),
+  privateLesson(
+    GameMode.teacher,
+    '個別指導',
+    '生徒ひとりを指導して伸ばす。',
+    CommandTarget.member,
+  ),
 
-/// 練習メニューの配分（合計 100）。
-class PracticeMenu {
-  const PracticeMenu({
-    this.basics = 30,
-    this.part = 30,
-    this.ensemble = 30,
-    this.rest = 10,
-  }) : assert(basics + part + ensemble + rest == 100);
+  // ── 外部講師 ──
+  intensiveCoaching(
+    GameMode.instructor,
+    '集中レッスン',
+    '選んだ部員のパート（同じ楽器）全員を劇的に伸ばす。少し疲れさせる。',
+    CommandTarget.member,
+  ),
+  masterclass(GameMode.instructor, '公開講座', '部全体を少し伸ばす。', CommandTarget.none),
+  travelLesson(
+    GameMode.instructor,
+    '出張レッスン',
+    '契約している別の学校を鍛える（その学校のコンクールの評価が上がる）。拠点校には顔を出せない。',
+    CommandTarget.school,
+  ),
+  restDay(GameMode.instructor, '休む', '何もしない。', CommandTarget.none),
 
-  final int basics;
-  final int part;
-  final int ensemble;
-  final int rest;
-}
+  // ── OB/OG ──
+  snackGift(
+    GameMode.alumni,
+    '差し入れ（5,000円）',
+    '部員のストレスが下がり、やる気が上がる。部との絆が深まる。',
+    CommandTarget.none,
+    cost: 5000,
+  ),
+  consultation(
+    GameMode.alumni,
+    '悩み相談',
+    '後輩ひとりの悩みを聞く。絆が深いほどよく効く。',
+    CommandTarget.member,
+  ),
+  donation(
+    GameMode.alumni,
+    '寄付（30,000円）',
+    '楽器や備品を寄付する。部全体が少し伸び、やる気が上がる。',
+    CommandTarget.none,
+    cost: 30000,
+  ),
+  work(
+    GameMode.alumni,
+    '仕事に打ち込む',
+    '資金を稼ぐ（12,000円）。母校には顔を出せない。',
+    CommandTarget.none,
+  );
 
-class TeacherModeState {
-  const TeacherModeState({
-    required this.schoolId,
-    required this.advisorNpcId,
-    this.menu = const PracticeMenu(),
-    this.commandsLeft = 2,
+  const CareerCommand(
+    this.mode,
+    this.label,
+    this.description,
+    this.target, {
+    this.cost = 0,
   });
 
-  /// 赴任先の学校。
-  final String schoolId;
-
-  /// プレイヤーが演じる顧問（世界の NPC を引き継ぐか、新規に作る）。
-  final String advisorNpcId;
-  final PracticeMenu menu;
-
-  /// 今週まだ出せる指示の数。
-  final int commandsLeft;
-}
-
-// ───────────── 外部講師モード ─────────────
-
-enum InstructorCommand {
-  intensiveCoaching('集中レッスン', '1 つのパートを劇的に伸ばす（週に 1 回）。'),
-  masterclass('公開講座', '学校全体の音楽性を少し上げる。'),
-  travel('移動', '別の学校へ向かう（その週は他に何もできない）。');
-
-  const InstructorCommand(this.label, this.description);
+  final GameMode mode;
   final String label;
   final String description;
+  final CommandTarget target;
+
+  /// 必要な資金（OB/OG）。
+  final int cost;
+
+  static List<CareerCommand> of(GameMode mode) => [
+    for (final c in values)
+      if (c.mode == mode) c,
+  ];
 }
 
-class InstructorModeState {
-  const InstructorModeState({
-    required this.contractedSchoolIds,
-    required this.currentSchoolId,
-    this.actionPoints = 1,
-    this.reputation = 50,
-  });
+/// 顧問の練習メニュー（毎週、部全体にかかる）。
+enum PracticeMenuPreset {
+  balanced('バランス', '基礎・パート・合奏をまんべんなく。', 3, 0, 0),
+  basics('基礎重視', 'ロングトーンと音階中心。伸びは控えめだが、心は落ち着く。', 2, -2, 0),
+  part('パート重視', 'パート練習中心。よく伸びるが、疲れがたまる。', 5, 3, 0),
+  ensemble('合奏重視', '合奏中心。部のまとまりが育つ。', 3, 1, 1),
+  rest('休養多め', '練習を軽めにして休ませる。伸びないが、ストレスが大きく下がる。', 0, -7, 0);
 
-  /// 契約している学校（複数校を渡り歩く）。
-  final List<String> contractedSchoolIds;
-  final String currentSchoolId;
+  const PracticeMenuPreset(
+    this.label,
+    this.description,
+    this.skillGain,
+    this.stressDelta,
+    this.cohesion,
+  );
 
-  /// 1 週間に使える行動回数（少ない代わりに効果が大きい）。
-  final int actionPoints;
-
-  /// 講師としての評判（0..100）。契約の増減に関わる。
-  final int reputation;
-}
-
-// ───────────── OB/OG モード ─────────────
-
-enum AlumniCommand {
-  snackGift('差し入れ', '資金を使って部員のストレスを下げ、やる気を上げる。'),
-  consultation('悩み相談', '後輩ひとりの悩みを聞く。心の傷が癒え、信頼が深まる。'),
-  donation('寄付', '楽器や備品の購入資金を寄付する（楽器の状態が良くなる）。'),
-  work('アルバイト・仕事', '資金を稼ぐ（その週は母校に顔を出せない）。');
-
-  const AlumniCommand(this.label, this.description);
   final String label;
   final String description;
-}
 
-class AlumniModeState {
-  const AlumniModeState({
-    required this.almaMaterSchoolId,
-    this.money = 30000,
-    this.weeklyIncome = 10000,
-    this.bondWithClub = 50,
-  });
+  /// 毎週の熟練度の伸び（基準値）。
+  final int skillGain;
 
-  /// 支援する母校。
-  final String almaMaterSchoolId;
+  /// 毎週のストレスの変化。
+  final int stressDelta;
 
-  /// 所持金（円）。
-  final int money;
-  final int weeklyIncome;
-
-  /// 部との絆（0..100）。高いほど相談を持ちかけられる。
-  final int bondWithClub;
+  /// 1 なら部員どうしの好感が少しずつ育つ。
+  final int cohesion;
 }

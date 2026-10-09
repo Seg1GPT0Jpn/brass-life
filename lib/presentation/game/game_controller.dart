@@ -1,8 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../../core/rng/seed_code.dart';
 import '../../domain/career/career_record.dart';
+import '../../domain/career/game_mode.dart';
+import '../../domain/career/mode_states.dart';
+import '../../domain/game/conducting/conducting.dart';
 import '../../domain/career/career_recorder.dart';
 import '../../domain/game/engine/club_membership.dart';
 import '../../domain/game/engine/ending_analyzer.dart';
@@ -52,6 +56,41 @@ class GameController extends Notifier<GameState?> {
   void submit(WeeklyAction action, {String? targetId}) =>
       _commit(_tm.submitAction(state!, action, targetId: targetId));
 
+  /// テスト用: 状態をそのまま差し替える（保存はしない）。
+  @visibleForTesting
+  void debugReplace(GameState s) => state = s;
+
+  /// 大人編を始める。
+  void newCareerGame(
+    GameMode mode, {
+    required String schoolId,
+    required String familyName,
+    required String givenName,
+    String? originTitle,
+  }) => _commit(
+    _tm.newCareerGame(
+      _ctx.world,
+      mode,
+      schoolId: schoolId,
+      familyName: familyName,
+      givenName: givenName,
+      originTitle: originTitle,
+    ),
+  );
+
+  /// 大人編の週のコマンド。
+  void submitCareer(CareerCommand command, {String? targetId}) =>
+      _commit(_tm.submitCareerCommand(state!, command, targetId: targetId));
+
+  void setPracticeMenu(PracticeMenuPreset menu) =>
+      _commit(_tm.setPracticeMenu(state!, menu));
+
+  List<String> resolveTeacherAudition(Set<String> selected) {
+    final r = _tm.resolveTeacherAudition(state!, selected);
+    _commit(r.state);
+    return r.lines;
+  }
+
   /// 楽器の希望を提出し、経緯の説明を返す。
   List<String> resolveInstrument(List<InstrumentType> wishes) {
     final r = _tm.resolveInstrumentDecision(state!, wishes);
@@ -71,8 +110,8 @@ class GameController extends Notifier<GameState?> {
     return r.lines;
   }
 
-  List<String> resolveContest(ApproachCard card) {
-    final r = _tm.resolveContest(state!, card);
+  List<String> resolveContest(ApproachCard? card, {ConductingPlan? plan}) {
+    final r = _tm.resolveContest(state!, card, plan: plan);
     _commit(r.state);
     return r.lines;
   }
@@ -83,8 +122,8 @@ class GameController extends Notifier<GameState?> {
     return r.lines;
   }
 
-  List<String> resolveConcert(ApproachCard card) {
-    final r = _tm.resolveConcert(state!, card);
+  List<String> resolveConcert(ApproachCard? card, {ConductingPlan? plan}) {
+    final r = _tm.resolveConcert(state!, card, plan: plan);
     _commit(r.state);
     return r.lines;
   }
@@ -160,7 +199,7 @@ class GameController extends Notifier<GameState?> {
       worldSeed: s.worldSeed,
       seedCode: SeedCode.format(s.worldSeed),
       playerName: s.player.fullName,
-      dateLabel: ctx.calendar.dateOf(s.turn).labelWithStage,
+      dateLabel: ctx.dateLabelOf(s),
       schoolName: ctx.index.schoolById[s.schoolId]!.name,
       savedAt: DateTime.now().toIso8601String(),
     );
@@ -172,7 +211,7 @@ class GameController extends Notifier<GameState?> {
     state = s;
     if (save) saveTo(GameSaveRepository.autoSlot);
     // 6 年間を終えた瞬間に、進路とエンディングを周回の記録として残す（キャリアモードの解放用）
-    if (justFinished) {
+    if (justFinished && s.mode == GameMode.student) {
       final ending = EndingAnalyzer(_ctx).analyze(s);
       ref
           .read(careerRepositoryProvider)

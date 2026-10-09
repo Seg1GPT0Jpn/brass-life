@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/feature_flags.dart';
+import '../../app/providers.dart';
 import '../../domain/game/engine/contest_engine.dart';
 import '../../domain/game/engine/practice_bgm.dart';
 import '../../domain/game/engine/piece_selection.dart';
@@ -10,8 +11,10 @@ import '../../domain/game/engine/school_calendar.dart';
 import '../../domain/game/models/game_enums.dart';
 import '../../domain/game/models/game_state.dart';
 import '../../domain/game/scene/scene_models.dart';
+import '../../domain/repositories/piece_repository.dart';
 import '../../domain/value_objects/instrument.dart';
 import '../common/widgets/common_widgets.dart';
+import '../career/career_home_tab.dart';
 import 'club_membership_card.dart';
 import 'game_controller.dart';
 import 'event_panels.dart';
@@ -31,6 +34,7 @@ class HomeTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(gameControllerProvider)!;
+    if (s.mode.isCareer) return const CareerHomeTab();
     final wide = MediaQuery.sizeOf(context).width >= 900;
     final status = _StatusCard(s);
     final main = switch (s) {
@@ -62,7 +66,7 @@ class HomeTab extends ConsumerWidget {
     final diorama = finished ? null : const _DioramaCard();
     final skip = finished || s.pending != null ? null : const _SkipPanel();
     final membership = finished ? null : const ClubMembershipCard();
-    final log = _LogCard(s);
+    final log = GameLogCard(s);
     if (wide) {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -191,21 +195,30 @@ class _DioramaCardState extends ConsumerState<_DioramaCard> {
         return _handle(await showMemberSheet(context, ref, actor));
       case ChooseAction(:final action, :final targetId):
         final before = ref.read(clubSceneProvider)!;
-        // Phase 7（準備中）: 練習の行動に合わせて課題曲を練習 BGM として流す
-        if (FeatureFlags.practiceBgm) {
+        // 練習の行動に合わせて、今年の課題曲を練習 BGM として流す
+        if (FeatureFlags.practiceBgm && ref.read(practiceBgmEnabledProvider)) {
           final cue = PracticeBgm.cueFor(
             ref.read(gameContextProvider)!,
             ref.read(gameControllerProvider)!,
             action,
           );
-          if (cue != null) {
-            ref
-                .read(piecePlayerProvider.notifier)
-                .playFrom(
-                  cue.piece,
-                  start: Duration(seconds: cue.startSeconds),
-                  loop: cue.loop,
-                );
+          final st = ref.read(piecePlayerProvider);
+          final player = ref.read(piecePlayerProvider.notifier);
+          // 直接再生できる音源があるときだけ鳴らす（埋め込みプレーヤーは自動再生できない）
+          final playable =
+              cue != null &&
+              (ref.read(pieceRepositoryProvider).audioOf(cue.piece)
+                      is AssetPieceAudio ||
+                  !st.streamBlocked);
+          if (playable) {
+            player.playFrom(
+              cue.piece,
+              start: Duration(seconds: cue.startSeconds),
+              loop: cue.loop,
+              bgm: true,
+            );
+          } else if (st.isBgm && st.active) {
+            player.stop();
           }
         }
         ref
@@ -265,6 +278,28 @@ class _DioramaCardState extends ConsumerState<_DioramaCard> {
                   style: theme.textTheme.bodySmall,
                 ),
               ),
+              if (FeatureFlags.practiceBgm)
+                TextButton.icon(
+                  onPressed: () {
+                    final on = ref.read(practiceBgmEnabledProvider);
+                    ref.read(practiceBgmEnabledProvider.notifier).toggle();
+                    final st = ref.read(piecePlayerProvider);
+                    if (on && st.isBgm && st.active) {
+                      ref.read(piecePlayerProvider.notifier).stop();
+                    }
+                  },
+                  icon: Icon(
+                    ref.watch(practiceBgmEnabledProvider)
+                        ? Icons.music_note
+                        : Icons.music_off,
+                    size: 16,
+                  ),
+                  label: Text(
+                    ref.watch(practiceBgmEnabledProvider)
+                        ? '練習BGM オン'
+                        : '練習BGM オフ',
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 8),
@@ -406,8 +441,9 @@ class _FinishedCard extends StatelessWidget {
   );
 }
 
-class _LogCard extends StatelessWidget {
-  const _LogCard(this.s);
+/// 最近の出来事（大人編の画面でも使う）。
+class GameLogCard extends StatelessWidget {
+  const GameLogCard(this.s, {super.key});
   final GameState s;
 
   @override

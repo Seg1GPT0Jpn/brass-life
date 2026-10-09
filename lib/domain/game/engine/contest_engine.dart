@@ -4,6 +4,9 @@ import '../../value_objects/school_enums.dart';
 import '../master/approach_cards.dart';
 import '../models/game_enums.dart';
 import '../models/game_state.dart';
+import '../../career/game_mode.dart';
+import '../conducting/conducting.dart';
+import '../conducting/conducting_effect.dart';
 import 'piece_fit.dart';
 import 'piece_selection.dart';
 import 'game_context.dart';
@@ -233,7 +236,8 @@ class ContestEngine {
               id,
               id == s.schoolId
                   ? (_myScore(s, stage) ?? -1)
-                  : _otherScore(id, fiscalYear, stage),
+                  : _otherScore(id, fiscalYear, stage) +
+                        (s.career?.schoolBoosts[id] ?? 0),
             ),
           ...virtual,
         ]..sort((a, b) {
@@ -251,8 +255,9 @@ class ContestEngine {
 
   ({GameState state, List<String> lines}) perform(
     GameState s,
-    ApproachCard? card,
-  ) {
+    ApproachCard? card, {
+    ConductingPlan? plan,
+  }) {
     final progress = s.contest!;
     final stage = progress.nextStage!;
     final division = progress.division;
@@ -298,8 +303,20 @@ class ContestEngine {
         lines.add('「${card.label}」で臨んだ。${e.note}');
       }
     } else {
-      lines.add('今年はコンクールメンバーではないので、客席から仲間を応援した。');
+      lines.add(switch (s.mode) {
+        GameMode.teacher => '顧問として指揮台に立った。',
+        GameMode.instructor => '外部講師として、客席から教え子たちを見守った。',
+        GameMode.alumni => 'OB/OG として、客席から後輩たちを応援した。',
+        GameMode.student => '今年はコンクールメンバーではないので、客席から仲間を応援した。',
+      });
     }
+    // 指揮者ミニゲーム（本番の演奏プラン）
+    if (plan != null) {
+      final c = ConductingEffect.apply(ctx, s, members, plan);
+      v += c.bonus;
+      lines.addAll(c.lines);
+    }
+
     // 課題曲との相性
     final piece = PieceSelection(ctx).currentOf(s);
     if (piece != null) {
@@ -336,7 +353,14 @@ class ContestEngine {
     final scored =
         <(String, int)>[
           for (final id in real)
-            (id, id == s.schoolId ? v : _otherScore(id, fy, stage)),
+            (
+              id,
+              id == s.schoolId
+                  ? v
+                  // 外部講師の出張レッスンで鍛えた学校は上乗せ
+                  : _otherScore(id, fy, stage) +
+                        (s.career?.schoolBoosts[id] ?? 0),
+            ),
           ...virtual,
         ]..sort((a, b) {
           final c = b.$2.compareTo(a.$2);
@@ -442,17 +466,24 @@ class ContestEngine {
         award: award,
       );
       history = [...history, record];
-      final stageLabel = ctx.calendar.dateOf(s.turn).stageLabel;
+      final career = s.mode.isCareer;
+      final stageLabel = career
+          ? '${ctx.calendar.dateOf(s.turn).academicYearIndex + 1}年目'
+          : ctx.calendar.dateOf(s.turn).stageLabel;
       achievements = [
         ...achievements,
         Achievement(
           fiscalYear: fy,
           schoolId: s.schoolId,
-          kind: playerIn ? 'contest' : 'contest_support',
-          label: '$stageLabel ${record.summary}${playerIn ? '' : '（客席で応援）'}',
+          kind: career
+              ? 'contest_career'
+              : (playerIn ? 'contest' : 'contest_support'),
+          label:
+              '$stageLabel ${record.summary}'
+              '${playerIn || career ? '' : '（客席で応援）'}',
           weight:
               (stage.level * 20 + (award == ContestAward.gold ? 15 : 0)) ~/
-              (playerIn ? 1 : 3),
+              (playerIn || career ? 1 : 3),
         ),
       ];
     }

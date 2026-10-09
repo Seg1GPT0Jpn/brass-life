@@ -3,6 +3,10 @@ import '../../entities/player.dart';
 import '../../entities/world.dart';
 import '../../value_objects/instrument.dart';
 import '../models/candidacy.dart';
+import '../conducting/conducting.dart';
+import '../../career/career_engine.dart';
+import '../../career/game_mode.dart';
+import '../../career/mode_states.dart';
 import 'club_membership.dart';
 import 'piece_selection.dart';
 import '../models/game_enums.dart';
@@ -90,6 +94,67 @@ class TimeManager {
     ]);
     return _prepareTurn(s);
   }
+
+  /// 大人編（顧問・外部講師・OB/OG）を始める。
+  GameState newCareerGame(
+    World world,
+    GameMode mode, {
+    required String schoolId,
+    required String familyName,
+    required String givenName,
+    String? originTitle,
+  }) => _prepareTurn(
+    CareerEngine(ctx).start(
+      world,
+      mode,
+      schoolId: schoolId,
+      familyName: familyName,
+      givenName: givenName,
+      originTitle: originTitle,
+    ),
+  );
+
+  /// 大人編の週のコマンドを実行し、次の週へ進める。
+  GameState submitCareerCommand(
+    GameState s,
+    CareerCommand command, {
+    String? targetId,
+  }) {
+    if (s.pending != null) {
+      throw StateError('入力待ちのイベントがあります: ${s.pending!.type}');
+    }
+    if (s.stage == GameStage.finished) return s;
+    final r = CareerEngine(ctx).apply(s, command, targetId);
+    final next = r.state.copyWith(
+      choices: [
+        ...r.state.choices,
+        '${s.turn}:cmd:${command.name}${targetId == null ? '' : ':$targetId'}',
+      ],
+    );
+    final drama = DramaEngine(ctx).weekly(next, null);
+    final target = targetId == null
+        ? ''
+        : (command.target == CommandTarget.school
+              ? '（${ctx.index.schoolById[targetId]!.name}）'
+              : '（${ctx.npc(s, targetId).fullName}）');
+    return _advance(
+      _log(drama.state, '${command.label}$target', [
+        ...r.lines,
+        ...drama.lines,
+      ]),
+    );
+  }
+
+  /// 顧問の練習メニューを変える（週は進まない）。
+  GameState setPracticeMenu(GameState s, PracticeMenuPreset menu) {
+    if (s.mode != GameMode.teacher) throw StateError('顧問モードのみ');
+    return s.copyWith(career: s.career!.copyWith(menu: menu.name));
+  }
+
+  /// 1 週間を既定の行動で進める（本編は月の方針、大人編は既定のコマンド）。
+  GameState _autoWeek(GameState s) => s.mode.isCareer
+      ? submitCareerCommand(s, CareerEngine(ctx).autoCommand(s))
+      : submitAction(s, actionForPolicy(s));
 
   /// 設定から主人公（世界のプレイヤーと同じ形）を作る。
   Player _playerFrom(World world, PlayerSetup setup) {
@@ -196,13 +261,41 @@ class TimeManager {
   }
 
   /// コンクールの本番にアプローチカードを選んで臨む。
+  /// コンクール本番に臨む。[card] はアプローチカード（顧問モードでは null）、
+  /// [plan] は指揮者ミニゲームのプラン（遊ばなければ null）。
   ({GameState state, List<String> lines}) resolveContest(
     GameState s,
-    ApproachCard card,
-  ) {
+    ApproachCard? card, {
+    ConductingPlan? plan,
+  }) {
     _expect(s, PendingEventType.contest);
-    final r = ContestEngine(ctx).perform(s, card);
-    return _finishEvent(r.state, 'コンクール', r.lines, 'contest:${card.name}');
+    final r = ContestEngine(ctx).perform(s, card, plan: plan);
+    return _finishEvent(
+      r.state,
+      'コンクール',
+      r.lines,
+      'contest:${card?.name ?? '-'}${plan == null ? '' : ':${plan.encode()}'}',
+    );
+  }
+
+  /// 顧問モード: オーディションの合否を決める（[selected] がメンバー）。
+  ({GameState state, List<String> lines}) resolveTeacherAudition(
+    GameState s,
+    Set<String> selected,
+  ) {
+    _expect(s, PendingEventType.teacherAudition);
+    final fy = ctx.calendar.dateOf(s.turn).fiscalYear;
+    final r = AuditionEngine(ctx).run(s, null, selection: selected);
+    final started = r.state.copyWith(
+      contest: ContestEngine(ctx).start(r.state, fy),
+    );
+    final ids = [...selected]..sort();
+    return _finishEvent(
+      started,
+      'オーディション',
+      r.lines,
+      'teacher_audition:${ids.join(',')}',
+    );
   }
 
   /// 幹部選出での意思を表明する。
@@ -222,11 +315,17 @@ class TimeManager {
   /// 定期演奏会にアプローチカードを選んで臨む。
   ({GameState state, List<String> lines}) resolveConcert(
     GameState s,
-    ApproachCard card,
-  ) {
+    ApproachCard? card, {
+    ConductingPlan? plan,
+  }) {
     _expect(s, PendingEventType.concert);
-    final r = ConcertEngine(ctx).run(s, card);
-    return _finishEvent(r.state, '定期演奏会', r.lines, 'concert:${card.name}');
+    final r = ConcertEngine(ctx).run(s, card, plan: plan);
+    return _finishEvent(
+      r.state,
+      '定期演奏会',
+      r.lines,
+      'concert:${card?.name ?? '-'}${plan == null ? '' : ':${plan.encode()}'}',
+    );
   }
 
   /// 部活推薦の打診に答える（[schoolId] が null なら断る）。
@@ -325,12 +424,22 @@ class TimeManager {
       ).state,
       PendingEventType.pieceSelection => resolvePieceSelection(s, null).state,
       PendingEventType.audition => resolveAudition(s, cardsOf(s).first).state,
-      PendingEventType.contest => resolveContest(s, cardsOf(s).first).state,
+      PendingEventType.teacherAudition => resolveTeacherAudition(
+        s,
+        AuditionEngine(ctx).recommended(s),
+      ).state,
+      PendingEventType.contest => resolveContest(
+        s,
+        s.mode == GameMode.teacher ? null : cardsOf(s).first,
+      ).state,
       PendingEventType.executiveSelection => resolveExecutive(
         s,
         const Candidacy.neutral(),
       ).state,
-      PendingEventType.concert => resolveConcert(s, cardsOf(s).first).state,
+      PendingEventType.concert => resolveConcert(
+        s,
+        s.mode == GameMode.teacher ? null : cardsOf(s).first,
+      ).state,
       PendingEventType.recommendation => resolveRecommendation(
         s,
         s.exam!.offers.first,
@@ -396,7 +505,7 @@ class TimeManager {
     while (cur.pending == null && cur.stage != GameStage.finished) {
       final d = ctx.calendar.dateOf(cur.turn);
       if (d.month != month) break;
-      cur = submitAction(cur, actionForPolicy(cur));
+      cur = _autoWeek(cur);
     }
     return cur;
   }
@@ -410,7 +519,7 @@ class TimeManager {
     var cur = s.copyWith(policy: policy);
     for (var i = 0; i < maxWeeks; i++) {
       if (cur.pending != null || cur.stage == GameStage.finished) break;
-      cur = submitAction(cur, actionForPolicy(cur));
+      cur = _autoWeek(cur);
     }
     return cur;
   }
@@ -467,7 +576,7 @@ class TimeManager {
       final waiting = ctx
           .activeMembers(cur)
           .any((m) => m.grade == 1 && m.instrument == null);
-      if (cur.player.instrument == null) {
+      if (cur.mode == GameMode.student && cur.player.instrument == null) {
         return cur.copyWith(
           pending: PendingEvent(
             type: PendingEventType.instrumentDecision,
@@ -483,7 +592,7 @@ class TimeManager {
 
     // 1.5 課題曲の選曲（5 月第 1 週）
     if (cur.turn == school.turnOf(fy, 5, 1) && cur.setPieces['$fy'] == null) {
-      if (_playerPerforms(cur)) {
+      if (_playerPerforms(cur) || cur.mode == GameMode.teacher) {
         return cur.copyWith(
           pending: PendingEvent(
             type: PendingEventType.pieceSelection,
@@ -497,6 +606,14 @@ class TimeManager {
 
     // 2. オーディション（6 月第 2 週）
     if (cur.turn == school.turnOf(fy, 6, 2) && cur.contest?.fiscalYear != fy) {
+      if (cur.mode == GameMode.teacher) {
+        return cur.copyWith(
+          pending: PendingEvent(
+            type: PendingEventType.teacherAudition,
+            turn: cur.turn,
+          ),
+        );
+      }
       if (_playerPerforms(cur)) {
         return cur.copyWith(
           pending: PendingEvent(
@@ -522,6 +639,15 @@ class TimeManager {
         cur.contest!.fiscalYear == fy &&
         next != null &&
         cur.turn == contest.stageTurn(fy, next)) {
+      if (cur.mode == GameMode.teacher) {
+        return cur.copyWith(
+          pending: PendingEvent(
+            type: PendingEventType.contest,
+            turn: cur.turn,
+            data: {'stage': next.name},
+          ),
+        );
+      }
       if (cur.contestMembers.contains(Relations.player)) {
         return cur.copyWith(
           pending: PendingEvent(
@@ -571,6 +697,11 @@ class TimeManager {
 
     // 6. 定期演奏会（3 月第 3 週）
     if (cur.turn == school.turnOf(fy, 3, 3) && cur.lastConcertYear != fy) {
+      if (cur.mode == GameMode.teacher) {
+        return cur.copyWith(
+          pending: PendingEvent(type: PendingEventType.concert, turn: cur.turn),
+        );
+      }
       if (_playerPerforms(cur)) {
         return cur.copyWith(
           pending: PendingEvent(
@@ -735,6 +866,13 @@ class TimeManager {
 
   /// 年度更新: 3 年生の卒業・進級・新入生の入部。
   GameState _newFiscalYear(GameState s, int fiscalYear) {
+    // 大人編: 任期が終わったらエンディングへ
+    if (s.mode.isCareer && s.turn >= s.career!.termEndTurn) {
+      return _notice(s.copyWith(stage: GameStage.finished), '任期の終わり', [
+        '${GameMode.termYears}年間の任期が終わった。',
+        'エンディングを見よう。',
+      ]);
+    }
     final club = ctx.club(s);
     final npcs = Map.of(s.npcs);
     final roster = <String>[];
@@ -833,7 +971,9 @@ class TimeManager {
       npcs[n.id] = RosterService.initialState(n)
           .copyWith(grade: 1, instrument: null, skill: 0);
     }
-    final player = s.player.copyWith(grade: s.player.grade + 1);
+    final player = s.mode.isCareer
+        ? s.player
+        : s.player.copyWith(grade: s.player.grade + 1);
     next = next.copyWith(
       npcs: npcs,
       roster: roster2,
@@ -841,7 +981,9 @@ class TimeManager {
       player: player,
     );
     return _log(next, null, [
-      '$fiscalYear年度が始まった。${player.grade}年生に進級。',
+      s.mode.isCareer
+          ? '$fiscalYear年度が始まった。'
+          : '$fiscalYear年度が始まった。${player.grade}年生に進級。',
       '3年生 $graduated 人が卒業し、新入生 ${cohort.length} 人が入部した。',
     ]);
   }
@@ -858,12 +1000,11 @@ class TimeManager {
   ];
 
   GameState _log(GameState s, String? action, List<String> lines) {
-    final d = ctx.calendar.dateOf(s.turn);
     final logs = [
       ...s.logs,
       WeekLog(
         turn: s.turn,
-        dateLabel: d.labelWithStage,
+        dateLabel: ctx.dateLabelOf(s),
         actionLabel: action,
         lines: lines,
       ),

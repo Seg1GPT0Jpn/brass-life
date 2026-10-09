@@ -9,6 +9,7 @@ import '../../value_objects/person_enums.dart';
 import '../../value_objects/personality.dart';
 import '../../value_objects/relationship_vector.dart';
 import '../../value_objects/school_enums.dart';
+import '../../career/game_mode.dart';
 import 'game_enums.dart';
 import 'player_setup.dart';
 
@@ -84,6 +85,12 @@ abstract class GameState with _$GameState {
 
     /// 各年度のコンクールの課題曲（年度 → 曲 ID）。
     @Default(<String, String>{}) Map<String, String> setPieces,
+
+    /// ゲームモード（本編は生徒、大人編は顧問・外部講師・OB/OG）。
+    @Default(GameMode.student) GameMode mode,
+
+    /// 大人編の状態（本編では null）。
+    CareerState? career,
 
     /// 役職（ID → 役職）。
     @Default(<String, ClubRole>{}) Map<String, ClubRole> roles,
@@ -351,6 +358,39 @@ abstract class EntranceExamState with _$EntranceExamState {
 
   factory EntranceExamState.fromJson(Map<String, dynamic> json) =>
       _$EntranceExamStateFromJson(json);
+}
+
+/// 大人編（キャリアモード）の状態。
+@freezed
+abstract class CareerState with _$CareerState {
+  const factory CareerState({
+    /// 任期が終わるターン。
+    required int termEndTurn,
+
+    /// 顧問: 練習メニュー（PracticeMenuPreset.name）。
+    @Default('balanced') String menu,
+
+    /// 外部講師: 契約している学校（先頭が拠点校）。
+    @Default(<String>[]) List<String> contractedSchoolIds,
+
+    /// 外部講師: 評判（0..100）。
+    @Default(50) int reputation,
+
+    /// 外部講師: 出張レッスンで鍛えた学校のコンクールでの上乗せ（学校 ID → 点）。
+    @Default(<String, int>{}) Map<String, int> schoolBoosts,
+
+    /// OB/OG: 所持金（円）。
+    @Default(0) int money,
+
+    /// OB/OG: 部との絆（0..100）。
+    @Default(50) int bond,
+
+    /// 解放のもとになった生徒時代の称号（お試しなら null）。
+    String? originTitle,
+  }) = _CareerState;
+
+  factory CareerState.fromJson(Map<String, dynamic> json) =>
+      _$CareerStateFromJson(json);
 }
 
 /// プレイヤーの実績（エンディング解析用）。

@@ -1,3 +1,4 @@
+import '../../career/game_mode.dart';
 import '../../value_objects/instrument.dart';
 import '../engine/game_context.dart';
 import '../engine/relations.dart';
@@ -73,7 +74,8 @@ class ClubSceneService {
 
     // ── 顧問（音楽室の指揮台）──
     final club = ctx.club(s);
-    if (!player.retired) {
+    // 顧問モードではプレイヤー自身が指揮台に立つ
+    if (!player.retired && s.mode != GameMode.teacher) {
       placed[club.advisorId] = const _Placement(
         location: SceneLocation.musicRoom,
         activity: ActorActivity.conducting,
@@ -232,6 +234,29 @@ class ClubSceneService {
 
   _Placement _placePlayer(GameState s, Map<String, _Placement> placed) {
     final p = s.player;
+    // 大人編: 顧問は指揮台、外部講師は音楽室で指導、OB/OG は廊下で後輩と話す
+    switch (s.mode) {
+      case GameMode.teacher:
+        return const _Placement(
+          location: SceneLocation.musicRoom,
+          activity: ActorActivity.conducting,
+          mood: ActorMood.normal,
+        );
+      case GameMode.instructor:
+        return const _Placement(
+          location: SceneLocation.musicRoom,
+          activity: ActorActivity.teaching,
+          mood: ActorMood.normal,
+        );
+      case GameMode.alumni:
+        return const _Placement(
+          location: SceneLocation.hallway,
+          activity: ActorActivity.chatting,
+          mood: ActorMood.happy,
+        );
+      case GameMode.student:
+        break;
+    }
     final mood = p.stress >= 70 || p.fatigue >= 80
         ? ActorMood.tired
         : (p.motivation < 30

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/app_info.dart';
 import '../../app/feature_flags.dart';
 import '../../app/providers.dart';
+import '../../domain/career/game_mode.dart';
 import 'career_modes_card.dart';
 import '../game/character_creation_page.dart';
 import '../game/game_controller.dart';
@@ -41,6 +42,14 @@ class _TitlePageState extends ConsumerState<TitlePage> {
     if (!ok || !mounted) return;
     ref.invalidate(characterCreationProvider);
     context.go('/create');
+  }
+
+  /// 世界を生成して大人編の設定画面へ。
+  Future<void> _startCareer(GameMode mode) async {
+    final ok = await ref.read(titleViewModelProvider.notifier).generate();
+    _controller.text = ref.read(titleViewModelProvider).input;
+    if (!ok || !mounted) return;
+    context.go('/career/${mode.name}');
   }
 
   Future<void> _delete(String slot) async {
@@ -261,7 +270,7 @@ class _TitlePageState extends ConsumerState<TitlePage> {
                   ),
                   if (FeatureFlags.careerModes) ...[
                     const SizedBox(height: 32),
-                    const CareerModesCard(),
+                    CareerModesCard(onStart: _startCareer, busy: loading),
                   ],
                   const SizedBox(height: 32),
                   Text(

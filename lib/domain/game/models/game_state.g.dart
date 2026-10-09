@@ -74,6 +74,11 @@ _GameState _$GameStateFromJson(Map<String, dynamic> json) => _GameState(
         (k, e) => MapEntry(k, e as String),
       ) ??
       const <String, String>{},
+  mode:
+      $enumDecodeNullable(_$GameModeEnumMap, json['mode']) ?? GameMode.student,
+  career: json['career'] == null
+      ? null
+      : CareerState.fromJson(json['career'] as Map<String, dynamic>),
   roles:
       (json['roles'] as Map<String, dynamic>?)?.map(
         (k, e) => MapEntry(k, $enumDecode(_$ClubRoleEnumMap, e)),
@@ -126,6 +131,8 @@ Map<String, dynamic> _$GameStateToJson(_GameState instance) =>
       'clubHistory': instance.clubHistory.map((e) => e.toJson()).toList(),
       'achievements': instance.achievements.map((e) => e.toJson()).toList(),
       'setPieces': instance.setPieces,
+      'mode': _$GameModeEnumMap[instance.mode]!,
+      'career': ?instance.career?.toJson(),
       'roles': instance.roles.map((k, e) => MapEntry(k, _$ClubRoleEnumMap[e]!)),
       'executiveSelectionTurn': ?instance.executiveSelectionTurn,
       'lastConcertYear': ?instance.lastConcertYear,
@@ -147,6 +154,13 @@ const _$MonthlyPolicyEnumMap = {
   MonthlyPolicy.balanced: 'balanced',
   MonthlyPolicy.studyFocus: 'studyFocus',
   MonthlyPolicy.health: 'health',
+};
+
+const _$GameModeEnumMap = {
+  GameMode.student: 'student',
+  GameMode.teacher: 'teacher',
+  GameMode.instructor: 'instructor',
+  GameMode.alumni: 'alumni',
 };
 
 const _$ClubRoleEnumMap = {
@@ -467,6 +481,37 @@ Map<String, dynamic> _$EntranceExamStateToJson(_EntranceExamState instance) =>
       'applications': instance.applications,
       'results': instance.results,
       'enrolled': ?instance.enrolled,
+    };
+
+_CareerState _$CareerStateFromJson(Map<String, dynamic> json) => _CareerState(
+  termEndTurn: (json['termEndTurn'] as num).toInt(),
+  menu: json['menu'] as String? ?? 'balanced',
+  contractedSchoolIds:
+      (json['contractedSchoolIds'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const <String>[],
+  reputation: (json['reputation'] as num?)?.toInt() ?? 50,
+  schoolBoosts:
+      (json['schoolBoosts'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, (e as num).toInt()),
+      ) ??
+      const <String, int>{},
+  money: (json['money'] as num?)?.toInt() ?? 0,
+  bond: (json['bond'] as num?)?.toInt() ?? 50,
+  originTitle: json['originTitle'] as String?,
+);
+
+Map<String, dynamic> _$CareerStateToJson(_CareerState instance) =>
+    <String, dynamic>{
+      'termEndTurn': instance.termEndTurn,
+      'menu': instance.menu,
+      'contractedSchoolIds': instance.contractedSchoolIds,
+      'reputation': instance.reputation,
+      'schoolBoosts': instance.schoolBoosts,
+      'money': instance.money,
+      'bond': instance.bond,
+      'originTitle': ?instance.originTitle,
     };
 
 _Achievement _$AchievementFromJson(Map<String, dynamic> json) => _Achievement(

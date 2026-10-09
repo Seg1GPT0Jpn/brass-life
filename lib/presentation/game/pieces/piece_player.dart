@@ -113,6 +113,7 @@ class PlaybackState {
     this.duration = Duration.zero,
     this.fromAsset = false,
     this.streamBlocked = false,
+    this.isBgm = false,
   });
 
   final Piece? piece;
@@ -125,6 +126,9 @@ class PlaybackState {
 
   /// この起動中にネット配信の再生が失敗した（以降は Suno の埋め込みプレーヤーを使う）。
   final bool streamBlocked;
+
+  /// 練習 BGM として鳴らしている。
+  final bool isBgm;
 
   bool isCurrent(Piece p) => piece?.id == p.id;
   bool get active =>
@@ -143,6 +147,7 @@ class PlaybackState {
     duration: duration ?? this.duration,
     fromAsset: fromAsset,
     streamBlocked: streamBlocked,
+    isBgm: isBgm,
   );
 }
 
@@ -180,6 +185,7 @@ class PiecePlayer extends Notifier<PlaybackState> {
     Piece piece, {
     required Duration start,
     required bool loop,
+    bool bgm = false,
   }) async {
     final audio = ref.read(pieceRepositoryProvider).audioOf(piece);
     final fromAsset = audio is AssetPieceAudio;
@@ -188,6 +194,7 @@ class PiecePlayer extends Notifier<PlaybackState> {
       status: PlaybackStatus.loading,
       fromAsset: fromAsset,
       streamBlocked: state.streamBlocked,
+      isBgm: bgm,
     );
     try {
       await _engine.stop();
@@ -253,3 +260,15 @@ String formatDuration(Duration d) {
   final s = d.inSeconds % 60;
   return '$m:${s.toString().padLeft(2, '0')}';
 }
+
+/// 練習 BGM を鳴らすか（プレイヤーが切り替える。起動中のみ覚えておく）。
+class PracticeBgmSetting extends Notifier<bool> {
+  @override
+  bool build() => true;
+
+  void toggle() => state = !state;
+}
+
+final practiceBgmEnabledProvider = NotifierProvider<PracticeBgmSetting, bool>(
+  PracticeBgmSetting.new,
+);

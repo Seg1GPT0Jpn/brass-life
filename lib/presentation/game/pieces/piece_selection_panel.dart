@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../domain/career/game_mode.dart';
 import '../../../domain/game/engine/piece_fit.dart';
 import '../../../domain/game/engine/piece_selection.dart';
 import '../../common/widgets/common_widgets.dart';
@@ -49,7 +50,9 @@ class _PieceSelectionPanelState extends ConsumerState<PieceSelectionPanel> {
           ),
           const SizedBox(height: 4),
           Text(
-            sel.hasVoice(s)
+            s.mode == GameMode.teacher
+                ? '顧問として、今年の課題曲を決める。'
+                : sel.hasVoice(s)
                 ? 'あなたには発言力がある。推した曲がそのまま採用される。'
                 : '最後は顧問が決める。顧問の評価が高ければ、意見を汲んでもらえることもある。',
             style: theme.textTheme.bodySmall,
@@ -73,12 +76,13 @@ class _PieceSelectionPanelState extends ConsumerState<PieceSelectionPanel> {
             child: Text(
               _selected == null
                   ? '推す曲を選んでください'
-                  : '「${options.firstWhere((p) => p.id == _selected).title}」を推す',
+                  : '「${options.firstWhere((p) => p.id == _selected).title}」'
+                        '${s.mode == GameMode.teacher ? 'に決める' : 'を推す'}',
             ),
           ),
           TextButton(
             onPressed: () => _submit(null),
-            child: const Text('顧問に任せる'),
+            child: Text(s.mode == GameMode.teacher ? '部にいちばん合う曲にする' : '顧問に任せる'),
           ),
         ],
       ),

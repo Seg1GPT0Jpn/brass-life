@@ -36,7 +36,49 @@ class AuditionEngine {
     if (s.player.instrument != null && s.player.inClub) Relations.player,
   ];
 
-  ({GameState state, List<String> lines}) run(GameState s, ApproachCard? card) {
+  /// 部員の評価（顧問モードの選考画面でも使う）。
+  int npcScore(GameState s, String id) {
+    final rng = ctx.sim.stream(
+      turn: s.turn,
+      domain: 'audition',
+      actor: id,
+      choice: '',
+    );
+    final n = ctx.npc(s, id);
+    final st = s.npcs[id]!;
+    final frightTag = n.traits.where((t) => t.traitId == 'stage_fright');
+    return st.skill +
+        n.aptitude.expression * 2 +
+        (st.motivation - 50) ~/ 2 +
+        (n.hasTrait('hardworking') ? 10 : 0) -
+        (frightTag.isEmpty ? 0 : 40 * frightTag.first.intensity) +
+        rng.normalInt(mean: 0, sd: 40, min: -150, max: 150);
+  }
+
+  /// 顧問モードの選考: 候補者（評価の高い順）と上限。
+  ({List<String> candidates, Map<String, int> scores, int limit}) preview(
+    GameState s,
+  ) {
+    final c = _candidates(s);
+    final scores = {for (final id in c) id: npcScore(s, id)};
+    c.sort((a, b) {
+      final x = scores[b]!.compareTo(scores[a]!);
+      return x != 0 ? x : a.compareTo(b);
+    });
+    return (candidates: c, scores: scores, limit: _limit(s));
+  }
+
+  /// 顧問におすすめの選考（いつもの選び方と同じ）。
+  Set<String> recommended(GameState s) =>
+      run(s, null).state.contestMembers.toSet();
+
+  /// [selection] を渡すと、その部員をメンバーにする（顧問モード）。
+  /// 評価の高い部員を外して低い部員を選ぶと、外された部員は納得できず顧問への信頼を失う。
+  ({GameState state, List<String> lines}) run(
+    GameState s,
+    ApproachCard? card, {
+    Set<String>? selection,
+  }) {
     final limit = _limit(s);
     final candidates = _candidates(s);
     final mem = MemoryWriter(ctx, s);
@@ -85,16 +127,7 @@ class AuditionEngine {
             fright +
             rng.normalInt(mean: 0, sd: sd, min: -150, max: 150);
       } else {
-        final n = ctx.npc(s, id);
-        final st = npcs[id]!;
-        final frightTag = n.traits.where((t) => t.traitId == 'stage_fright');
-        scores[id] =
-            st.skill +
-            n.aptitude.expression * 2 +
-            (st.motivation - 50) ~/ 2 +
-            (n.hasTrait('hardworking') ? 10 : 0) -
-            (frightTag.isEmpty ? 0 : 40 * frightTag.first.intensity) +
-            rng.normalInt(mean: 0, sd: 40, min: -150, max: 150);
+        scores[id] = npcScore(s, id);
       }
     }
 
@@ -121,6 +154,28 @@ class AuditionEngine {
       for (final id in rest) {
         if (selected.length >= limit) break;
         selected.add(id);
+      }
+    }
+
+    // 顧問が選んだ場合はそれに従う（上限を超えた分は評価順で切る）
+    final unfair = <(String, String)>[];
+    if (selection != null) {
+      final chosen = candidates.where(selection.contains).toList()
+        ..sort(byScore);
+      selected
+        ..clear()
+        ..addAll(chosen.take(limit));
+      // 外された部員より評価の低い同じ楽器の部員が選ばれていたら「不公平」
+      for (final out in candidates.where((id) => !selected.contains(id))) {
+        final lower =
+            selected
+                .where(
+                  (inn) =>
+                      instOf(inn) == instOf(out) && scores[inn]! < scores[out]!,
+                )
+                .toList()
+              ..sort(byScore);
+        if (lower.isNotEmpty) unfair.add((out, lower.last));
       }
     }
 
@@ -181,6 +236,36 @@ class AuditionEngine {
           }
         }
       }
+    }
+    for (final (out, inn) in unfair) {
+      final st = npcs[out]!;
+      npcs[out] = st.copyWith(
+        motivation: (st.motivation - 6).clamp(0, 100),
+        stress: (st.stress + 8).clamp(0, 100),
+      );
+      Relations.add(
+        relations,
+        out,
+        Relations.player,
+        const RelationshipVector(trust: -10, affection: -4),
+      );
+      mem.add(
+        category: MemoryCategory.audition,
+        subjectId: out,
+        objectIds: [inn, Relations.player],
+        reasonKey: 'teacher_unfair_audition',
+        params: {
+          'actor': ctx.npc(s, out).fullName,
+          'target': ctx.npc(s, inn).fullName,
+        },
+        importance: 35,
+      );
+    }
+    if (unfair.isNotEmpty) {
+      lines.add('実力で上回るのに外された部員 ${unfair.length} 人が、選考に納得していない。');
+    }
+    if (selection != null) {
+      lines.add('コンクールメンバー ${selected.length} 人を発表した。');
     }
     if (soloist != null) {
       final name = soloist == Relations.player

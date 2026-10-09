@@ -1,4 +1,6 @@
 import '../../entities/memory_tag.dart';
+import '../conducting/conducting.dart';
+import '../conducting/conducting_effect.dart';
 import '../master/approach_cards.dart';
 import '../models/game_state.dart';
 import 'game_context.dart';
@@ -19,7 +21,11 @@ class ConcertEngine {
     if (s.player.instrument != null && s.player.inClub) Relations.player,
   ];
 
-  ({GameState state, List<String> lines}) run(GameState s, ApproachCard? card) {
+  ({GameState state, List<String> lines}) run(
+    GameState s,
+    ApproachCard? card, {
+    ConductingPlan? plan,
+  }) {
     final perf = Performance(ctx);
     final members = performers(s);
     final m = perf.metrics(s, members);
@@ -49,6 +55,11 @@ class ConcertEngine {
         fatigue: (player.fatigue + e.fatigueDelta).clamp(0, 100),
       );
       lines.add('「${card.label}」で臨んだ。${e.note}');
+    }
+    if (plan != null) {
+      final c = ConductingEffect.apply(ctx, s, members, plan);
+      v += c.bonus;
+      lines.addAll(c.lines);
     }
     v += rng.normalInt(mean: 0, sd: sd, min: -15, max: 15);
     final (rating, motivation, importance) = v >= 6

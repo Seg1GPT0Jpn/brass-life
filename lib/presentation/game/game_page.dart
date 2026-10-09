@@ -28,12 +28,11 @@ class GamePage extends ConsumerWidget {
         ),
       );
     }
-    final date = ctx.calendar.dateOf(s.turn);
     return DefaultTabController(
       length: 4,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(date.labelWithStage),
+          title: Text(ctx.dateLabelOf(s)),
           actions: [
             IconButton(
               tooltip: '課題曲',

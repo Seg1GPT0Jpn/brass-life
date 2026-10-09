@@ -98,6 +98,7 @@ enum PendingEventType {
   instrumentDecision('楽器決定'),
   pieceSelection('課題曲の選曲'),
   audition('オーディション'),
+  teacherAudition('オーディションの合否'),
   contest('コンクール'),
   executiveSelection('幹部選出'),
   concert('定期演奏会'),

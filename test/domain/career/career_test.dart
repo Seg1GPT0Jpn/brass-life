@@ -80,7 +80,7 @@ void main() {
       expect(t, isA<Rejected>());
     });
 
-    test('大人編は解放済みでも準備中のため始められない', () {
+    test('解放済みの大人編は、選んで始められる', () {
       final chosen = CareerFlow.chooseMode(
         const AtTitle({GameMode.student, GameMode.alumni}),
         GameMode.alumni,
@@ -88,13 +88,14 @@ void main() {
       expect(chosen, isA<Moved>());
       final phase = (chosen as Moved).to;
       expect(
-        CareerFlow.start(
-          phase,
-          const AlumniSession(AlumniModeState(almaMaterSchoolId: 's1')),
-        ),
+        CareerFlow.start(phase, const ModeSession(GameMode.alumni, 'auto')),
+        isA<Moved>(),
+      );
+      // 別のモードのセッションでは始められない
+      expect(
+        CareerFlow.start(phase, const ModeSession(GameMode.teacher, 'auto')),
         isA<Rejected>(),
       );
-      // 戻れる
       expect(CareerFlow.backToTitle(phase, const []), isA<Moved>());
     });
 
@@ -103,7 +104,10 @@ void main() {
         const AtTitle({GameMode.student}),
         GameMode.student,
       );
-      t = CareerFlow.start((t as Moved).to, const StudentSession('auto'));
+      t = CareerFlow.start(
+        (t as Moved).to,
+        const ModeSession(GameMode.student, 'auto'),
+      );
       expect((t as Moved).to, isA<Playing>());
       final r = rec(roles: ['captain']);
       t = CareerFlow.finish(t.to, r);
@@ -115,12 +119,11 @@ void main() {
       );
     });
 
-    test('大人編の状態の器', () {
-      const menu = PracticeMenu(basics: 40, part: 30, ensemble: 20, rest: 10);
-      expect(menu.basics + menu.part + menu.ensemble + menu.rest, 100);
-      expect(TeacherCommand.values, hasLength(4));
-      expect(InstructorCommand.values, hasLength(3));
-      expect(const AlumniModeState(almaMaterSchoolId: 's').money, 30000);
+    test('コマンドはモードごとに分かれている', () {
+      expect(CareerCommand.of(GameMode.teacher), hasLength(4));
+      expect(CareerCommand.of(GameMode.instructor), hasLength(4));
+      expect(CareerCommand.of(GameMode.alumni), hasLength(4));
+      expect(CareerCommand.of(GameMode.student), isEmpty);
     });
   });
 

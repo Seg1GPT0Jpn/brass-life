@@ -1,3 +1,4 @@
+import '../../career/career_ending.dart';
 import '../../entities/memory_tag.dart';
 import '../../master/memory_templates.dart';
 import '../models/game_state.dart';
@@ -185,6 +186,7 @@ class EndingAnalyzer {
   final GameContext ctx;
 
   EndingResult analyze(GameState s) {
+    if (s.mode.isCareer) return CareerEndingAnalyzer(ctx).analyze(s);
     final f = _Features(s, ctx);
     final p = s.player;
     String name(String? id) => id == null ? '' : ctx.npc(s, id).fullName;

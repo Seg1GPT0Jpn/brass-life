@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:brass_life/app/providers.dart';
 import 'package:brass_life/data/repositories/master_piece_repository.dart';
 import 'package:brass_life/domain/game/master/set_pieces.dart';
@@ -10,55 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// 再生の記録だけをとる偽のエンジン。
-class FakeAudioEngine implements AudioEngine {
-  final calls = <String>[];
-  bool fail = false;
-  final position = StreamController<Duration>.broadcast();
-  final duration = StreamController<Duration>.broadcast();
-  final complete = StreamController<void>.broadcast();
-
-  @override
-  Future<void> playUrl(String url, {Duration start = Duration.zero}) async {
-    calls.add(
-      start == Duration.zero ? 'url:$url' : 'url:$url@${start.inSeconds}',
-    );
-    if (fail) throw Exception('network');
-  }
-
-  @override
-  Future<void> playAsset(
-    String assetPath, {
-    Duration start = Duration.zero,
-  }) async => calls.add('asset:$assetPath');
-
-  @override
-  Future<void> setLooping(bool loop) async => calls.add('loop:$loop');
-
-  @override
-  Future<void> pause() async => calls.add('pause');
-
-  @override
-  Future<void> resume() async => calls.add('resume');
-
-  @override
-  Future<void> stop() async => calls.add('stop');
-
-  @override
-  Future<void> seek(Duration p) async => calls.add('seek:${p.inSeconds}');
-
-  @override
-  Stream<Duration> get onPosition => position.stream;
-
-  @override
-  Stream<Duration> get onDuration => duration.stream;
-
-  @override
-  Stream<void> get onComplete => complete.stream;
-
-  @override
-  Future<void> dispose() async {}
-}
+import '../helpers/fake_audio_engine.dart';
 
 void main() {
   final piece = SetPieces.byYear(1).first;

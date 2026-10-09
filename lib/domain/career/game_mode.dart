@@ -2,7 +2,7 @@ import 'career_record.dart';
 
 /// ゲームモード。生徒モード（本編）をクリアすると、進路に応じて大人編が解放される。
 enum GameMode {
-  student('生徒', '中学・高校の 6 年間を吹奏楽部員として過ごす（本編）。', implemented: true),
+  student('生徒', '中学・高校の 6 年間を吹奏楽部員として過ごす（本編）。'),
   teacher(
     '顧問',
     '顧問として部を率いる。練習メニューの指示・オーディションの合否・選曲を決め、'
@@ -11,13 +11,16 @@ enum GameMode {
   instructor('外部講師', '複数の学校を渡り歩く外部講師。動ける回数は少ないが、特定のパートを劇的に伸ばせる。'),
   alumni('OB/OG', '卒業生として母校を支える。資金を使った差し入れや、後輩の悩み相談で間接的に部を後押しする。');
 
-  const GameMode(this.label, this.description, {this.implemented = false});
+  const GameMode(this.label, this.description);
 
   final String label;
   final String description;
 
-  /// 遊べる状態まで実装済みか（大人編は準備中）。
-  final bool implemented;
+  /// 大人編か。
+  bool get isCareer => this != student;
+
+  /// 大人編の任期（年）。
+  static const int termYears = 3;
 }
 
 /// 解放条件。
