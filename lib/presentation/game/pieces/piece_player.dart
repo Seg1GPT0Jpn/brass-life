@@ -9,10 +9,14 @@ import '../../../domain/repositories/piece_repository.dart';
 
 /// 音を鳴らす部分。テストでは偽物に差し替える。
 abstract interface class AudioEngine {
-  Future<void> playUrl(String url);
+  /// [start] の位置から再生する。
+  Future<void> playUrl(String url, {Duration start = Duration.zero});
 
   /// [assetPath] は pubspec に書いたパス（例: assets/audio/y1_I.mp3）。
-  Future<void> playAsset(String assetPath);
+  Future<void> playAsset(String assetPath, {Duration start = Duration.zero});
+
+  /// 最後まで鳴ったら頭から繰り返すか。
+  Future<void> setLooping(bool loop);
   Future<void> pause();
   Future<void> resume();
   Future<void> stop();
@@ -44,13 +48,20 @@ class AudioplayersEngine implements AudioEngine {
   }
 
   @override
-  Future<void> playUrl(String url) => _p.play(UrlSource(url));
+  Future<void> playUrl(String url, {Duration start = Duration.zero}) =>
+      _p.play(UrlSource(url), position: start == Duration.zero ? null : start);
 
   @override
-  Future<void> playAsset(String assetPath) => _p.play(
-    // AudioCache は assets/ を前置するので取り除く
-    AssetSource(assetPath.replaceFirst(RegExp(r'^assets/'), '')),
-  );
+  Future<void> playAsset(String assetPath, {Duration start = Duration.zero}) =>
+      _p.play(
+        // AudioCache は assets/ を前置するので取り除く
+        AssetSource(assetPath.replaceFirst(RegExp(r'^assets/'), '')),
+        position: start == Duration.zero ? null : start,
+      );
+
+  @override
+  Future<void> setLooping(bool loop) =>
+      _p.setReleaseMode(loop ? ReleaseMode.loop : ReleaseMode.stop);
 
   @override
   Future<void> pause() async => _player?.pause();
@@ -161,7 +172,15 @@ class PiecePlayer extends Notifier<PlaybackState> {
   AudioEngine get _engine => ref.read(audioEngineProvider);
 
   /// [piece] を最初から鳴らす。
-  Future<void> play(Piece piece) async {
+  Future<void> play(Piece piece) =>
+      playFrom(piece, start: Duration.zero, loop: false);
+
+  /// [piece] を [start] から鳴らす。[loop] なら繰り返す（練習 BGM 用）。
+  Future<void> playFrom(
+    Piece piece, {
+    required Duration start,
+    required bool loop,
+  }) async {
     final audio = ref.read(pieceRepositoryProvider).audioOf(piece);
     final fromAsset = audio is AssetPieceAudio;
     state = PlaybackState(
@@ -172,11 +191,12 @@ class PiecePlayer extends Notifier<PlaybackState> {
     );
     try {
       await _engine.stop();
+      await _engine.setLooping(loop);
       switch (audio) {
         case AssetPieceAudio(:final assetPath):
-          await _engine.playAsset(assetPath);
+          await _engine.playAsset(assetPath, start: start);
         case StreamPieceAudio(:final url):
-          await _engine.playUrl(url.toString());
+          await _engine.playUrl(url.toString(), start: start);
       }
       if (state.isCurrent(piece)) {
         state = state.copyWith(status: PlaybackStatus.playing);

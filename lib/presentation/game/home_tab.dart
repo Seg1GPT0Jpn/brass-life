@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app/feature_flags.dart';
 import '../../domain/game/engine/contest_engine.dart';
+import '../../domain/game/engine/practice_bgm.dart';
 import '../../domain/game/engine/piece_selection.dart';
 import '../../domain/game/engine/school_calendar.dart';
 import '../../domain/game/models/game_enums.dart';
@@ -15,6 +17,7 @@ import 'game_controller.dart';
 import 'event_panels.dart';
 import 'exam_panels.dart';
 import 'instrument_decision_panel.dart';
+import 'pieces/piece_player.dart';
 import 'pieces/piece_selection_panel.dart';
 import 'scene/action_sheets.dart';
 import 'scene/ambient_audio.dart';
@@ -188,6 +191,23 @@ class _DioramaCardState extends ConsumerState<_DioramaCard> {
         return _handle(await showMemberSheet(context, ref, actor));
       case ChooseAction(:final action, :final targetId):
         final before = ref.read(clubSceneProvider)!;
+        // Phase 7（準備中）: 練習の行動に合わせて課題曲を練習 BGM として流す
+        if (FeatureFlags.practiceBgm) {
+          final cue = PracticeBgm.cueFor(
+            ref.read(gameContextProvider)!,
+            ref.read(gameControllerProvider)!,
+            action,
+          );
+          if (cue != null) {
+            ref
+                .read(piecePlayerProvider.notifier)
+                .playFrom(
+                  cue.piece,
+                  start: Duration(seconds: cue.startSeconds),
+                  loop: cue.loop,
+                );
+          }
+        }
         ref
             .read(gameControllerProvider.notifier)
             .submit(action, targetId: targetId);

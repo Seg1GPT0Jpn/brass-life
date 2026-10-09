@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/repositories/hive_career_repository.dart';
+import '../domain/repositories/career_repository.dart';
 import '../data/repositories/master_piece_repository.dart';
 import '../domain/repositories/piece_repository.dart';
 import '../core/rng/rng_service.dart';
@@ -35,6 +37,11 @@ final verifyDeterminismUseCaseProvider = Provider<VerifyDeterminismUseCase>(
 );
 
 /// 現在の世界の乱数サービス（Phase 2 以降のシミュレーションで使用）。
+/// 周回をまたぐ記録（main で Hive 実装に差し替える）。
+final careerRepositoryProvider = Provider<CareerRepository>(
+  (ref) => InMemoryCareerRepository(),
+);
+
 /// 課題曲のマスターデータ（同梱音源の一覧は起動後に非同期で読み込む）。
 final pieceRepositoryProvider = Provider<PieceRepository>((ref) {
   final repo = MasterPieceRepository();

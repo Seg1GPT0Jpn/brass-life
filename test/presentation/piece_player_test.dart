@@ -19,14 +19,21 @@ class FakeAudioEngine implements AudioEngine {
   final complete = StreamController<void>.broadcast();
 
   @override
-  Future<void> playUrl(String url) async {
-    calls.add('url:$url');
+  Future<void> playUrl(String url, {Duration start = Duration.zero}) async {
+    calls.add(
+      start == Duration.zero ? 'url:$url' : 'url:$url@${start.inSeconds}',
+    );
     if (fail) throw Exception('network');
   }
 
   @override
-  Future<void> playAsset(String assetPath) async =>
-      calls.add('asset:$assetPath');
+  Future<void> playAsset(
+    String assetPath, {
+    Duration start = Duration.zero,
+  }) async => calls.add('asset:$assetPath');
+
+  @override
+  Future<void> setLooping(bool loop) async => calls.add('loop:$loop');
 
   @override
   Future<void> pause() async => calls.add('pause');
@@ -108,6 +115,18 @@ void main() {
       expect(engine.calls.last, 'resume');
       await p.stop();
       expect(c.read(piecePlayerProvider).piece, isNull);
+    });
+
+    test('練習 BGM 用: 指定秒数から、繰り返しで再生できる', () async {
+      await c
+          .read(piecePlayerProvider.notifier)
+          .playFrom(piece, start: const Duration(seconds: 30), loop: true);
+      expect(
+        engine.calls,
+        containsAllInOrder(['loop:true', 'url:${piece.streamUrl}@30']),
+      );
+      await c.read(piecePlayerProvider.notifier).play(piece);
+      expect(engine.calls, contains('loop:false'));
     });
 
     test('別の曲を鳴らすと前の曲は止まる', () async {

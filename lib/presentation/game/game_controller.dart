@@ -2,7 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../../core/rng/seed_code.dart';
+import '../../domain/career/career_record.dart';
+import '../../domain/career/career_recorder.dart';
 import '../../domain/game/engine/club_membership.dart';
+import '../../domain/game/engine/ending_analyzer.dart';
 import '../../domain/game/engine/game_context.dart';
 import '../../domain/game/engine/time_manager.dart';
 import '../../domain/game/master/approach_cards.dart';
@@ -164,10 +167,31 @@ class GameController extends Notifier<GameState?> {
   }
 
   void _commit(GameState s, {bool save = true}) {
+    final justFinished =
+        state?.stage != GameStage.finished && s.stage == GameStage.finished;
     state = s;
     if (save) saveTo(GameSaveRepository.autoSlot);
+    // 6 年間を終えた瞬間に、進路とエンディングを周回の記録として残す（キャリアモードの解放用）
+    if (justFinished) {
+      final ending = EndingAnalyzer(_ctx).analyze(s);
+      ref
+          .read(careerRepositoryProvider)
+          .add(
+            CareerRecorder.record(
+              s,
+              ending,
+              clearedAt: DateTime.now().toIso8601String(),
+            ),
+          )
+          .then((_) => ref.invalidate(careerRecordsProvider));
+    }
   }
 }
+
+/// これまでの周回の記録。
+final careerRecordsProvider = FutureProvider<List<CareerRecord>>(
+  (ref) => ref.watch(careerRepositoryProvider).all(),
+);
 
 final gameControllerProvider = NotifierProvider<GameController, GameState?>(
   GameController.new,

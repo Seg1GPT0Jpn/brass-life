@@ -83,6 +83,12 @@ flutter build web --release --no-web-resources-cdn      # 完全オフライン�
 Seed `TEST` の世界のフィンガープリントは `9EBA95EBDA15DF00`、同じ Seed で「練習漬け」の方針で6年間を自動で遊んだ最終状態のハッシュは `c0a28e89` で、
 VM と Web（Chrome）のどちらでも一致します（ゴールデンテストで固定）。
 
+## 今後（Phase 7・8）
+
+練習 BGM・指揮者ミニゲーム（Phase 7）と、キャリアモード＝大人編（Phase 8: 顧問／外部講師／OB・OG）の
+データモデル・判定・状態遷移を用意済み（本編の挙動は変えていない）。設計は [docs/design/phase7_8.md](docs/design/phase7_8.md)。
+6 年間を遊び終えると進路などが記録され、タイトルに大人編の解放状況が表示される（大人編そのものは準備中）。
+
 ## アーキテクチャ
 
 ```

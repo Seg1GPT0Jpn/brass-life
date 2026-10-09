@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/app_info.dart';
+import '../../app/feature_flags.dart';
 import '../../app/providers.dart';
+import 'career_modes_card.dart';
 import '../game/character_creation_page.dart';
 import '../game/game_controller.dart';
 import '../world/world_controller.dart';
@@ -257,6 +259,10 @@ class _TitlePageState extends ConsumerState<TitlePage> {
                     loading: () => const LinearProgressIndicator(),
                     error: (e, _) => Text('読み込み失敗: $e'),
                   ),
+                  if (FeatureFlags.careerModes) ...[
+                    const SizedBox(height: 32),
+                    const CareerModesCard(),
+                  ],
                   const SizedBox(height: 32),
                   Text(
                     appBuildLabel,

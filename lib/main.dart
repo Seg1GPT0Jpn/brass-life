@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/app.dart';
 import 'app/providers.dart';
+import 'data/repositories/hive_career_repository.dart';
 import 'data/datasources/hive/hive_store.dart';
 import 'data/repositories/hive_game_save_repository.dart';
 import 'data/repositories/hive_world_meta_repository.dart';
@@ -27,6 +28,9 @@ Future<void> main() async {
         ),
         gameSaveRepositoryProvider.overrideWithValue(
           HiveGameSaveRepository(HiveStore.gameSaves),
+        ),
+        careerRepositoryProvider.overrideWithValue(
+          HiveCareerRepository(HiveStore.career),
         ),
       ],
       child: const BrassLifeApp(),

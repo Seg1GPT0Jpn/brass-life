@@ -5,14 +5,18 @@ import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 abstract final class HiveStore {
   static const String worldMetaBox = 'world_meta_v1';
   static const String gameSaveBox = 'game_saves_v1';
+  static const String careerBox = 'career_v1';
 
   static Future<void> init() async {
     await Hive.initFlutter();
     await Hive.openBox<String>(worldMetaBox);
     await Hive.openBox<String>(gameSaveBox);
+    await Hive.openBox<String>(careerBox);
   }
 
   static Box<String> get worldMeta => Hive.box<String>(worldMetaBox);
 
   static Box<String> get gameSaves => Hive.box<String>(gameSaveBox);
+
+  static Box<String> get career => Hive.box<String>(careerBox);
 }
