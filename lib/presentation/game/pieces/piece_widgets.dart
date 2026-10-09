@@ -5,6 +5,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../app/providers.dart';
 import '../../../domain/game/engine/piece_fit.dart';
 import '../../../domain/game/models/piece.dart';
+import '../../../domain/repositories/piece_repository.dart';
+import 'embed/suno_embed.dart';
 import 'piece_player.dart';
 
 /// 曲のページ（Suno）をブラウザで開く。
@@ -162,20 +164,55 @@ class _DemandRow extends StatelessWidget {
 }
 
 /// 再生・一時停止と、再生位置のシークバー。
-class PieceListenControls extends ConsumerWidget {
+///
+/// 同梱音源 → ネット配信の順に試し、ネット配信が使えないときは
+/// Suno の埋め込みプレーヤー（Web 版のみ。無料プランの公開曲でも再生できる）をカード内に出す。
+class PieceListenControls extends ConsumerStatefulWidget {
   const PieceListenControls({super.key, required this.piece});
 
   final Piece piece;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PieceListenControls> createState() =>
+      _PieceListenControlsState();
+}
+
+class _PieceListenControlsState extends ConsumerState<PieceListenControls> {
+  bool _embed = false;
+
+  Piece get piece => widget.piece;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // ネット配信に失敗したら、その曲は埋め込みプレーヤーに切り替える
+    ref.listen(piecePlayerProvider, (prev, next) {
+      if (next.isCurrent(piece) &&
+          next.status == PlaybackStatus.error &&
+          sunoEmbedSupported &&
+          !_embed) {
+        setState(() => _embed = true);
+      }
+    });
     final st = ref.watch(piecePlayerProvider);
     final player = ref.read(piecePlayerProvider.notifier);
+    final bundled =
+        ref.watch(pieceRepositoryProvider).audioOf(piece) is AssetPieceAudio;
+    // 同梱音源がなく、ネット配信が使えないと分かっていれば最初から埋め込みで聴く
+    final useEmbed = !bundled && st.streamBlocked && sunoEmbedSupported;
     final current = st.isCurrent(piece);
     final status = current ? st.status : PlaybackStatus.idle;
     final playing = status == PlaybackStatus.playing;
     final total = st.duration.inMilliseconds;
+
+    void onPlay() {
+      if (useEmbed) {
+        setState(() => _embed = !_embed);
+      } else {
+        player.toggle(piece);
+      }
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -183,16 +220,18 @@ class PieceListenControls extends ConsumerWidget {
           children: [
             IconButton.filledTonal(
               tooltip: playing ? '一時停止' : 'この曲を聴く',
-              onPressed: status == PlaybackStatus.loading
-                  ? null
-                  : () => player.toggle(piece),
+              onPressed: status == PlaybackStatus.loading ? null : onPlay,
               icon: status == PlaybackStatus.loading
                   ? const SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : Icon(playing ? Icons.pause : Icons.play_arrow),
+                  : Icon(
+                      playing || (useEmbed && _embed)
+                          ? Icons.pause
+                          : Icons.play_arrow,
+                    ),
             ),
             const SizedBox(width: 4),
             if (current && st.active && total > 0)
@@ -221,8 +260,15 @@ class PieceListenControls extends ConsumerWidget {
                 child: Text(switch (status) {
                   PlaybackStatus.loading => '読み込み中…',
                   PlaybackStatus.error => '',
+                  _ when useEmbed => 'Suno のプレーヤーで聴く',
                   _ => 'アプリ内で聴く',
                 }, style: theme.textTheme.bodySmall),
+              ),
+            if (sunoEmbedSupported && !useEmbed)
+              IconButton(
+                tooltip: 'Suno のプレーヤーを表示',
+                onPressed: () => setState(() => _embed = !_embed),
+                icon: Icon(_embed ? Icons.expand_less : Icons.queue_music),
               ),
             TextButton.icon(
               onPressed: () => openPiecePage(context, ref, piece),
@@ -233,11 +279,14 @@ class PieceListenControls extends ConsumerWidget {
         ),
         if (status == PlaybackStatus.error)
           Text(
-            '再生できませんでした。インターネット接続を確かめるか、「Suno で開く」から聴いてください。',
+            sunoEmbedSupported
+                ? '直接の再生はできなかったので、Suno のプレーヤーに切り替えました。▶ を押して聴いてください。'
+                : '再生できませんでした。インターネット接続を確かめるか、「Suno で開く」から聴いてください。',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.error,
             ),
           ),
+        if (_embed) SunoEmbedView(url: piece.embedUrl),
       ],
     );
   }

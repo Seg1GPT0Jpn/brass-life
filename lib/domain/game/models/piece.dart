@@ -67,6 +67,9 @@ class Piece {
   /// アプリ内で再生するための音声ファイルの URL（Suno の配信用 MP3）。
   String get streamUrl => 'https://cdn1.suno.ai/$id.mp3';
 
+  /// Suno の埋め込みプレーヤー（無料プランの公開曲でも使える）。
+  String get embedUrl => 'https://suno.com/embed/$id';
+
   /// 同梱した音源のアセットパス（未同梱なら null。例: assets/audio/y1_I.mp3）。
   final String? audioAsset;
 

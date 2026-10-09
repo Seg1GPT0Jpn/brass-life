@@ -119,10 +119,16 @@ void main() {
       expect(c.read(piecePlayerProvider).piece, same(other));
     });
 
-    test('読み込みに失敗するとエラー状態になる', () async {
+    test('ネット配信に失敗するとエラーになり、以降は埋め込みプレーヤーを使う印が残る', () async {
       engine.fail = true;
-      await c.read(piecePlayerProvider.notifier).play(piece);
+      final p = c.read(piecePlayerProvider.notifier);
+      expect(c.read(piecePlayerProvider).streamBlocked, isFalse);
+      await p.play(piece);
       expect(c.read(piecePlayerProvider).status, PlaybackStatus.error);
+      expect(c.read(piecePlayerProvider).streamBlocked, isTrue);
+      await p.stop();
+      expect(c.read(piecePlayerProvider).streamBlocked, isTrue);
+      expect(piece.embedUrl, 'https://suno.com/embed/${piece.id}');
     });
 
     test('再生位置と長さ、最後まで鳴ったら頭に戻る', () async {

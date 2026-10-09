@@ -101,6 +101,7 @@ class PlaybackState {
     this.position = Duration.zero,
     this.duration = Duration.zero,
     this.fromAsset = false,
+    this.streamBlocked = false,
   });
 
   final Piece? piece;
@@ -110,6 +111,9 @@ class PlaybackState {
 
   /// 同梱音源から鳴らしているか（false ならネット配信）。
   final bool fromAsset;
+
+  /// この起動中にネット配信の再生が失敗した（以降は Suno の埋め込みプレーヤーを使う）。
+  final bool streamBlocked;
 
   bool isCurrent(Piece p) => piece?.id == p.id;
   bool get active =>
@@ -127,6 +131,7 @@ class PlaybackState {
     position: position ?? this.position,
     duration: duration ?? this.duration,
     fromAsset: fromAsset,
+    streamBlocked: streamBlocked,
   );
 }
 
@@ -163,6 +168,7 @@ class PiecePlayer extends Notifier<PlaybackState> {
       piece: piece,
       status: PlaybackStatus.loading,
       fromAsset: fromAsset,
+      streamBlocked: state.streamBlocked,
     );
     try {
       await _engine.stop();
@@ -177,7 +183,12 @@ class PiecePlayer extends Notifier<PlaybackState> {
       }
     } on Object {
       if (state.isCurrent(piece)) {
-        state = state.copyWith(status: PlaybackStatus.error);
+        state = PlaybackState(
+          piece: piece,
+          status: PlaybackStatus.error,
+          fromAsset: fromAsset,
+          streamBlocked: state.streamBlocked || !fromAsset,
+        );
       }
     }
   }
@@ -209,7 +220,7 @@ class PiecePlayer extends Notifier<PlaybackState> {
 
   Future<void> stop() async {
     await _engine.stop();
-    state = const PlaybackState();
+    state = PlaybackState(streamBlocked: state.streamBlocked);
   }
 }
 

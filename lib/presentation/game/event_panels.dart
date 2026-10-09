@@ -97,7 +97,9 @@ class _CardEventPanelState extends ConsumerState<CardEventPanel> {
       ];
       // コンクール本番では今年の課題曲を流す（ネット配信なら読み込みに少しかかる）
       final piece = PieceSelection(ctx).currentOf(s);
-      if (widget.type == PendingEventType.contest && piece != null) {
+      if (widget.type == PendingEventType.contest &&
+          piece != null &&
+          !ref.read(piecePlayerProvider).streamBlocked) {
         ref.read(piecePlayerProvider.notifier).play(piece);
       }
       final lines = switch (widget.type) {
