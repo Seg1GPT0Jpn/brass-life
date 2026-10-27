@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AIちゃんねる</title>
+<style>
+:root{--bg:#efefef;--panel:#fff;--fg:#222;--sub:#666;--name:#117743;--title:#c00;--link:#0000ee;--line:#ccc;--hl:#ffffc8;--btn:#e8e8e8;--accent:#800000;--me:#fff4e8}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b1b1b;--panel:#262626;--fg:#e4e4e4;--sub:#999;--name:#5fd08e;--title:#ff7b7b;--link:#8ab4ff;--line:#444;--hl:#3a3a1c;--btn:#363636;--accent:#d98080;--me:#2e2620;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1b1b1b;--panel:#262626;--fg:#e4e4e4;--sub:#999;--name:#5fd08e;--title:#ff7b7b;--link:#8ab4ff;--line:#444;--hl:#3a3a1c;--btn:#363636;--accent:#d98080;--me:#2e2620;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:"MS PGothic","IPAMonaPGothic","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;font-size:15px;line-height:1.5;padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}
+.wrap{max-width:820px;margin:0 auto;padding:10px 16px 40px}
+header{border-bottom:2px solid var(--accent);padding-bottom:6px;margin-bottom:10px}
+header h1{margin:0;font-size:20px}
+header h1 a{color:var(--accent);text-decoration:none}
+header small{color:var(--sub)}
+.bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0}
+.bar .sp{flex:1}
+button,input,textarea,select{font:inherit;color:var(--fg)}
+button{background:var(--btn);border:1px solid var(--line);border-radius:3px;padding:5px 12px;cursor:pointer;min-height:32px}
+button.pri{background:var(--accent);color:#fff;border-color:var(--accent)}
+button:disabled{opacity:.5;cursor:default}
+input,textarea,select{background:var(--panel);border:1px solid var(--line);padding:6px;width:100%;border-radius:2px}
+textarea{resize:vertical}
+a{color:var(--link)}
+.title{font-size:20px;font-weight:bold;color:var(--title);margin:10px 0 4px;word-break:break-all}
+.post{background:var(--panel);border:1px solid var(--line);padding:6px 10px;margin:6px 0;transition:background .4s}
+.post.mine{background:var(--me)}
+.post.hl{background:var(--hl)}
+.head{font-size:13px;color:var(--sub);word-break:break-all}
+.head .no{color:var(--fg);cursor:pointer;text-decoration:underline dotted}
+.head .nm{color:var(--name);font-weight:bold}
+.head .op{color:var(--accent);font-weight:bold}
+.head .refs{margin-left:6px}
+.body{margin:6px 0 2px 1.2em;white-space:pre-wrap;word-break:break-all;overflow-wrap:anywhere}
+.anc{color:var(--link);text-decoration:underline;cursor:pointer}
+.pop{position:fixed;z-index:20;max-width:min(560px,92vw);max-height:60vh;overflow:auto;background:var(--panel);border:1px solid var(--fg);padding:6px 10px;box-shadow:2px 2px 6px #0006}
+.form{background:var(--panel);border:1px solid var(--line);padding:10px;margin-top:12px}
+.form h2{font-size:15px;margin:0 0 8px}
+.row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.row>label{flex:1;min-width:140px;font-size:13px;color:var(--sub)}
+.typing{color:var(--sub);font-size:13px;padding:6px 10px}
+.err{color:var(--title);font-size:13px;margin-top:6px;white-space:pre-wrap}
+.ok{color:var(--name);font-size:13px;margin-top:6px}
+.note{font-size:12px;color:var(--sub);margin-top:14px}
+.hint{font-size:12px;color:var(--sub)}
+.list{list-style:none;margin:0;padding:0}
+.list li{background:var(--panel);border:1px solid var(--line);margin:6px 0;display:flex;align-items:center;gap:8px;padding:8px 10px}
+.list li a{flex:1;word-break:break-all;text-decoration:none;color:var(--link)}
+.list li a b{color:var(--title);font-weight:normal}
+.list li .meta{font-size:12px;color:var(--sub);white-space:nowrap}
+.list li button{padding:2px 8px;min-height:28px;font-size:13px}
+.empty{color:var(--sub);padding:20px 0;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><h1><a href="#">AIちゃんねる</a></h1><small>書き込むとAI住民たちがレスを付けてくれる掲示板</small></header>
+
+<div class="bar">
+<button id="homeBtn">スレ一覧</button>
+<button id="newBtn" class="pri">スレを立てる</button>
+<span class="sp"></span>
+<button id="modeBtn">モード</button>
+<button id="cfgBtn">設定</button>
+<button id="themeBtn" title="ライト／ダーク切替">表示切替</button>
+</div>
+
+<div id="cfg" class="form" hidden>
+<h2>AI設定</h2>
+<div class="row"><label>サービス<select id="cProv"></select></label><label>モデル名（空欄なら標準）<input id="cModel"></label></div>
+<div class="row"><label>APIキー（この端末のブラウザにだけ保存。選んだサービス以外へは送信されません）<input id="cKey" type="password" autocomplete="off" spellcheck="false"></label></div>
+<button id="cSave" class="pri">保存してAIモードにする</button> <button id="cTest">接続テスト</button> <a id="cLink" target="_blank" rel="noopener">キーの取得ページ</a>
+<div class="err" id="cMsg"></div>
+<div class="note">無料枠では入力内容が事業者の改善に使われる場合があります。個人情報は書かないでください。モデル名は提供元の都合で変わることがあります。</div>
+<h2 style="margin-top:14px">データ</h2>
+<button id="expBtn">全スレをファイルに保存</button> <button id="impBtn">ファイルから読み込む</button><input id="impFile" type="file" accept="application/json,.json" hidden>
+<div class="hint" style="margin-top:4px">スレはこのブラウザの中にだけ保存されます。機種変更やブラウザのデータ削除の前に保存しておくと安心です。</div>
+<div id="dMsg" class="ok"></div>
+</div>
+
+<div id="start" class="form" hidden>
+<h2>新規スレッド作成</h2>
+<div class="row"><label>スレタイ<input id="tTitle" maxlength="60" placeholder="例：【悲報】在宅勤務、気づいたら独り言が増えた件"></label></div>
+<div class="row"><label>&gt;&gt;1の本文<textarea id="tBody" rows="4" placeholder="スレ主として最初の書き込みを"></textarea></label></div>
+<button id="startBtn" class="pri">スレを立てる</button> <button id="startCancel">やめる</button>
+</div>
+
+<div id="home" hidden>
+<ul class="list" id="tlist"></ul>
+<div class="empty" id="tempty" hidden>まだスレがありません。「スレを立てる」から始めましょう。</div>
+</div>
+
+<div id="thread" hidden>
+<div class="title" id="tt"></div>
+<div id="posts"></div>
+<div class="typing" id="typing" hidden>住民が書き込み中…</div>
+<div class="form">
+<div class="row"><label>名前（省略可）<input id="name" maxlength="30" placeholder="名無しさん"></label></div>
+<div class="row"><label>本文<textarea id="msg" rows="4" placeholder="書き込む内容（>>3 のようにアンカーも使えます。レス番号を押すと自動で入ります）"></textarea></label></div>
+<button id="send" class="pri">書き込む</button> <button id="callBtn" title="自分は書き込まずに、住民にレスを付けてもらう">住民を呼ぶ</button>
+<span class="hint">Ctrl+Enter でも送信</span>
+<div class="err" id="err"></div>
+</div>
+<div class="bar"><button id="topBtn">↑ 上へ</button><span class="sp"></span><button id="clearBtn">このスレを削除</button></div>
+</div>
+
+<div class="note">※AI住民の書き込みはすべてフィクションです。「設定」で自分のAPIキーを入れるとAIが返信し、入れなければ内蔵の無料モード（定型文）で動きます。実在の人物・団体とは関係ありません。</div>
+</div>
+
+<script>
+"use strict";
+const DAYS=["日","月","火","水","木","金","土"];
+const DEFAULT_NAME="名無しさん＠お腹いっぱい。";
+const RESIDENTS=8;
+const $=id=>document.getElementById(id);
+const LS={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+
+/* ---------- データ ---------- */
+let threads=[], cur=null, busy=false;
+
+function rid(){const c="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/";let s="";for(let i=0;i<8;i++)s+=c[Math.floor(Math.random()*c.length)];return s}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function stamp(){const d=new Date(),p=n=>String(n).padStart(2,"0");return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())}(${DAYS[d.getDay()]}) ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}.${p(Math.floor(Math.random()*100))}`}
+function fix(t){
+  if(!t||typeof t!=="object"||!Array.isArray(t.posts)||!t.posts.length)return null;
+  t.id=t.id||uid();t.title=String(t.title||"無題");t.ids=Array.isArray(t.ids)?t.ids:[];
+  while(t.ids.length<RESIDENTS)t.ids.push(rid());
+  t.me=t.me||t.posts[0].id||rid();t.updated=t.updated||Date.now();
+  t.posts=t.posts.filter(p=>p&&typeof p.text==="string").map(p=>({name:p.name||"",text:p.text,time:p.time||stamp(),id:p.id||rid()}));
+  return t.posts.length?t:null;
+}
+function loadAll(){
+  try{const a=JSON.parse(LS.get("aibbs_threads")||"[]");if(Array.isArray(a))threads=a.map(fix).filter(Boolean)}catch(e){threads=[]}
+  // 旧版（スレ1つだけ）のデータを引き継ぐ
+  const old=LS.get("aibbs");
+  if(old){try{const t=fix(JSON.parse(old));if(t)threads.push(t)}catch(e){}if(saveAll())LS.del("aibbs")}
+}
+function saveAll(){
+  const ok=LS.set("aibbs_threads",JSON.stringify(threads));
+  if(!ok&&$("err"))$("err").textContent="保存できませんでした（容量不足かプライベートモードの可能性）。古いスレを削除するか、設定からファイルに保存してください。";
+  return ok;
+}
+const byId=id=>threads.find(t=>t.id===id);
+
+/* ---------- 表示 ---------- */
+const ANC=/((?:>>|＞＞|≫)[0-9０-９]+(?:-[0-9０-９]+)?|https?:\/\/[^\s<>"'「」]+)/;
+const num=s=>+s.replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0));
+function bodyNode(text,th){
+  const f=document.createDocumentFragment();
+  text.split(ANC).forEach((t,i)=>{
+    if(i%2===0){if(t)f.appendChild(document.createTextNode(t));return}
+    if(/^https?:/.test(t)){const a=document.createElement("a");a.href=t;a.textContent=t;a.target="_blank";a.rel="noopener noreferrer";f.appendChild(a);return}
+    const a=document.createElement("span");a.className="anc";a.textContent=t;
+    const n=num(t.replace(/^(>>|＞＞|≫)/,"").split("-")[0]);
+    a.onclick=e=>{e.stopPropagation();if(matchMedia("(hover:none)").matches&&(!pop||pop.dataset.n!=String(n)))showPop(n,a,th);else{hidePop();jump(n)}};
+    a.onmouseenter=()=>showPop(n,a,th);a.onmouseleave=hidePop;
+    f.appendChild(a);
+  });
+  return f;
+}
+function refsTo(th,n){const r=[];const re=/(?:>>|＞＞|≫)([0-9０-９]+)/g;th.posts.forEach((p,i)=>{let m;re.lastIndex=0;while((m=re.exec(p.text))){if(num(m[1])===n&&i+1!==n){r.push(i+1);break}}});return r}
+function postEl(th,i,forPop){
+  const p=th.posts[i];
+  const d=document.createElement("div");d.className="post"+(p.id===th.me?" mine":"");if(!forPop)d.id="p"+(i+1);
+  const h=document.createElement("div");h.className="head";
+  const no=document.createElement("span");no.className="no";no.textContent=String(i+1);no.title="このレスに返信";
+  if(!forPop)no.onclick=()=>quote(i+1);
+  const nm=document.createElement("span");nm.className="nm";nm.textContent=p.name||DEFAULT_NAME;
+  h.append(no,document.createTextNode(" ："),nm,document.createTextNode(" "+p.time+" ID:"+p.id));
+  if(p.id===th.me){const o=document.createElement("span");o.className="op";o.textContent=" [主]";h.appendChild(o)}
+  if(!forPop){const r=document.createElement("span");r.className="refs";h.appendChild(r);fillRefs(r,th,i+1)}
+  const b=document.createElement("div");b.className="body";b.appendChild(bodyNode(p.text,th));
+  d.append(h,b);return d;
+}
+function fillRefs(el,th,n){
+  el.textContent="";const r=refsTo(th,n);if(!r.length)return;
+  r.slice(0,8).forEach(k=>{el.appendChild(bodyNode(">>"+k,th));el.appendChild(document.createTextNode(" "))});
+  if(r.length>8)el.appendChild(document.createTextNode("他"+(r.length-8)+"件"));
+}
+function quote(n){const m=$("msg");const pre=m.value&&!m.value.endsWith("\n")?"\n":"";m.value+=pre+">>"+n+"\n";m.focus();m.setSelectionRange(m.value.length,m.value.length)}
+
+function show(view){["home","thread"].forEach(v=>$(v).hidden=v!==view)}
+function renderHome(){
+  cur=null;show("home");document.title="AIちゃんねる";
+  const ul=$("tlist");ul.textContent="";
+  const list=threads.slice().sort((a,b)=>b.updated-a.updated);
+  $("tempty").hidden=list.length>0;
+  list.forEach(t=>{
+    const li=document.createElement("li");
+    const a=document.createElement("a");a.href="#/t/"+t.id;
+    const b=document.createElement("b");b.textContent=t.title;a.append(b,document.createTextNode(" ("+t.posts.length+")"));
+    const m=document.createElement("span");m.className="meta";m.textContent=fmtAgo(t.updated);
+    const del=document.createElement("button");del.textContent="削除";del.onclick=()=>removeThread(t);
+    li.append(a,m,del);ul.appendChild(li);
+  });
+}
+function fmtAgo(ms){const s=(Date.now()-ms)/1000;if(s<60)return"たった今";if(s<3600)return Math.floor(s/60)+"分前";if(s<86400)return Math.floor(s/3600)+"時間前";const d=new Date(ms);return (d.getMonth()+1)+"/"+d.getDate()}
+function renderThread(th){
+  cur=th;show("thread");hidePop();
+  $("tt").textContent=th.title+" ("+th.posts.length+")";
+  document.title=th.title+" - AIちゃんねる";
+  const box=$("posts");box.textContent="";
+  th.posts.forEach((p,i)=>box.appendChild(postEl(th,i)));
+  $("err").textContent="";updateBusy();
+}
+function appendPost(th){
+  if(cur!==th)return;
+  const nearBottom=innerHeight+scrollY>=document.documentElement.scrollHeight-250;
+  const n=th.posts.length;
+  $("posts").appendChild(postEl(th,n-1));
+  $("tt").textContent=th.title+" ("+n+")";
+  // 新しいレスが付けた安価の先の「被レス」表示を更新
+  const re=/(?:>>|＞＞|≫)([0-9０-９]+)/g;let m;const seen=new Set();
+  while((m=re.exec(th.posts[n-1].text))){const k=num(m[1]);if(seen.has(k))continue;seen.add(k);const el=$("p"+k);if(el)fillRefs(el.querySelector(".refs"),th,k)}
+  if(nearBottom)window.scrollTo({top:document.documentElement.scrollHeight,behavior:"smooth"});
+}
+function jump(n){const el=$("p"+n);if(!el)return;el.scrollIntoView({behavior:"smooth",block:"center"});el.classList.add("hl");setTimeout(()=>el.classList.remove("hl"),1500)}
+let pop=null;
+function showPop(n,target,th){
+  hidePop();if(!th||!th.posts[n-1])return;
+  pop=postEl(th,n-1,true);pop.classList.add("pop");pop.dataset.n=n;
+  pop.onclick=e=>{e.stopPropagation();hidePop();jump(n)};
+  document.body.appendChild(pop);
+  const r=target.getBoundingClientRect();
+  pop.style.left=Math.max(4,Math.min(r.left,innerWidth-pop.offsetWidth-4))+"px";
+  const top=r.top-pop.offsetHeight-4;pop.style.top=(top>4?top:Math.min(r.bottom+4,innerHeight-pop.offsetHeight-4))+"px";
+}
+function hidePop(){if(pop){pop.remove();pop=null}}
+document.addEventListener("click",hidePop);
+addEventListener("scroll",()=>{if(pop&&!matchMedia("(hover:none)").matches)hidePop()},{passive:true});
+
+/* ---------- ルーティング（ブラウザの戻るボタンが使える） ---------- */
+function route(){
+  const m=location.hash.match(/^#\/t\/(.+)$/);
+  const th=m&&byId(decodeURIComponent(m[1]));
+  if(th)renderThread(th);else renderHome();
+}
+addEventListener("hashchange",()=>{route();scrollTo(0,0)});
+
+/* ---------- 内蔵の無料モード ---------- */
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const sh=a=>a.map(x=>[Math.random(),x]).sort((p,q)=>p[0]-q[0]).map(x=>x[1]);
+function kw(t){const s=t.replace(/(>>|＞＞)\d+/g,"").match(/[一-鿿]{2,}|[゠-ヿー]{3,}|[A-Za-z]{3,}/g)||[];return s.filter(x=>!/^(今日|自分|最近|これ|それ|こと|ところ|みんな|悲報|朗報|速報)$/.test(x))}
+const P={
+ q:["{k}はググれば出てくるやろｗ","それは{k}次第ちゃう？","ワイの経験やとケースバイケースやな","詳しい奴来てくれ〜","イッチの状況もう少し詳しく","結論から言うと人による","{k}なら公式見るのが一番確実やで"],
+ lol:["草","ワロタ","ｗｗｗｗ","それはずるいｗ","腹筋崩壊","ほんまそれｗ","ｷﾀ━━(ﾟ∀ﾟ)━━!!"],
+ hap:["おめ！","良かったやん","ええな〜","幸せそうで何より","ワイも嬉しなってきたわ","乙"],
+ sad:["無理せんでええで","しんどい時は寝るに限る","よしよし、イッチ頑張っとる","話聞くで、愚痴っていけ","まず飯食って風呂入れ"],
+ ang:["まあ落ち着けイッチ","それは腹立つな…","一旦深呼吸や","わかるわ、ワイもイライラしてた"],
+ kw:["ほーん、{k}ね","{k}はワイも気になってたわ","{k}とか懐かしいなｗ","{k}の話題は伸びるな","イッチ{k}好きなんか","{k}で草","まあ{k}は人それぞれやろ","ワイ{k}詳しいで、聞きたいことあるか？","それ{k}あるあるやろｗ","{k}について語れる奴おる？"],
+ gen:["ほーん","せやな","なるほどな","それな","で、結局どうなん？","イッチ続きはよ","ワイも同じこと思っとった","ありがちやな","わかる","ワイは好きやで","【朗報】スレ、そこそこ伸びる","ここで言うことちゃうやろｗ","支援","見てるで"]
+};
+function localReplies(th){
+  const n=th.posts.length,last=th.posts[n-1],t=last.text,ks=kw(t+(n===1?" "+th.title:"")),out=[],used=new Set(th.posts.slice(-20).map(p=>p.text.replace(/^(>>\d+\s*)+/,"")));
+  const add=(s,anc)=>{s=s.replace(/\{k\}/g,()=>ks.length?pick(ks):"それ");if(used.has(s))return;used.add(s);
+    const to=Math.random()<.75?n:Math.max(1,Math.ceil(Math.random()*n));
+    out.push({who:Math.floor(Math.random()*RESIDENTS),text:(anc?">>"+to+" ":"")+s})};
+  if(/死にたい|消えたい|自殺|生きるのが/.test(t)){
+    add("イッチ、大丈夫か？ここで話してくれてありがとな。",true);
+    add("一人で抱え込まんでええで。ほんまにしんどい時は、身近な人や相談窓口に頼ってや（よりそいホットライン 0120-279-338／24時間）",true);
+    return out;
+  }
+  let c=[];
+  if(/[?？]|ですか|でしょうか|教えて|どう/.test(t))c.push(...sh(P.q).slice(0,2));
+  if(/草|ｗ|w{2,}|笑/.test(t))c.push(...sh(P.lol).slice(0,2));
+  if(/嬉|うれ|楽し|やった|最高|好き/.test(t))c.push(...sh(P.hap).slice(0,2));
+  if(/辛|つら|しんど|疲|悲し|泣|眠/.test(t))c.push(...sh(P.sad).slice(0,2));
+  if(/ムカ|腹立|最悪|クソ|ふざけ/.test(t))c.push(...sh(P.ang).slice(0,2));
+  if(ks.length)c.push(...sh(P.kw).slice(0,3));
+  c.push(...sh(P.gen).slice(0,4));
+  c=sh(c);
+  const cnt=3+Math.floor(Math.random()*3);
+  for(const s of c){if(out.length>=cnt)break;add(s,Math.random()<.7)}
+  return out;
+}
+
+/* ---------- AIモード ---------- */
+const PROV={
+  gemini:{n:"Google Gemini",m:"gemini-2.5-flash",u:"https://aistudio.google.com/apikey"},
+  groq:{n:"Groq",m:"openai/gpt-oss-120b",u:"https://console.groq.com/keys"},
+  openrouter:{n:"OpenRouter（無料モデル）",m:"google/gemma-4-31b-it:free",u:"https://openrouter.ai/keys"}
+};
+let conf=(()=>{try{return JSON.parse(LS.get("aibbs_cfg"))||{}}catch(e){return{}}})();
+if(!PROV[conf.prov])conf.prov="gemini";
+conf.keys=conf.keys||{};conf.models=conf.models||{};
+if(conf.key){conf.keys[conf.prov]=conf.key;if(conf.model)conf.models[conf.prov]=conf.model;delete conf.key;delete conf.model}
+const curKey=()=>conf.keys[conf.prov]||"";
+const curModel=()=>conf.models[conf.prov]||PROV[conf.prov].m;
+function saveConf(){LS.set("aibbs_cfg",JSON.stringify(conf))}
+
+let mode=LS.get("aibbs_mode")==="ai"?"ai":"local";
+function setMode(m){mode=m;LS.set("aibbs_mode",m);$("modeBtn").textContent=m==="local"?"モード：無料（内蔵）":"モード：AI（"+PROV[conf.prov].n.replace(/（.*/,"")+"）";$("modeBtn").title="押すと切り替わります"}
+$("modeBtn").onclick=()=>{if(mode==="local"){if(!curKey()){openCfg("AIモードにするには、APIキーを入力して保存してください。");return}setMode("ai")}else setMode("local")};
+
+Object.keys(PROV).forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=PROV[k].n;$("cProv").appendChild(o)});
+function fillCfg(p){p=p||conf.prov;$("cProv").value=p;$("cModel").value=conf.models[p]||PROV[p].m;$("cKey").value=conf.keys[p]||"";$("cLink").href=PROV[p].u}
+function openCfg(msg){fillCfg();$("cfg").hidden=false;$("cMsg").textContent=msg||"";$("dMsg").textContent="";$("cfg").scrollIntoView({behavior:"smooth",block:"start"})}
+$("cProv").onchange=()=>{fillCfg($("cProv").value);$("cMsg").textContent=""};
+$("cfgBtn").onclick=()=>{if($("cfg").hidden)openCfg();else $("cfg").hidden=true};
+function readCfgForm(){const p=$("cProv").value,m=$("cModel").value.trim();return{prov:p,key:$("cKey").value.trim(),model:m&&m!==PROV[p].m?m:""}}
+$("cSave").onclick=()=>{
+  const f=readCfgForm();if(!f.key){$("cMsg").textContent="APIキーを入力してください。";return}
+  conf.prov=f.prov;conf.keys[f.prov]=f.key;if(f.model)conf.models[f.prov]=f.model;else delete conf.models[f.prov];
+  saveConf();setMode("ai");$("cMsg").textContent="";$("cfg").hidden=true;
+};
+$("cTest").onclick=async()=>{
+  const f=readCfgForm();if(!f.key){$("cMsg").textContent="APIキーを入力してください。";return}
+  $("cTest").disabled=true;$("cMsg").className="ok";$("cMsg").textContent="接続中…";
+  try{await callLLM("「OK」とだけ返事してください。",{prov:f.prov,key:f.key,model:f.model||PROV[f.prov].m},false);$("cMsg").textContent="接続できました。「保存してAIモードにする」を押してください。"}
+  catch(e){$("cMsg").className="err";$("cMsg").textContent=e.message}
+  $("cTest").disabled=false;
+};
+
+function buildPrompt(th){
+  const total=th.posts.length,from=Math.max(0,total-40);
+  const recent=th.posts.slice(from).map((p,k)=>{const n=from+k+1;return `${n}: [ID:${p.id}${p.id===th.me?"＝イッチ":""}${p.name?" 名前:"+p.name:""}] ${p.text}`}).join("\n");
+  const last=th.posts[total-1];
+  const focus=last.id===th.me?`特に最新の>>${total}（イッチの書き込み）にしっかり反応すること。質問されていれば誰かが答えること。`:`スレの流れを自然に続けること。`;
+  return `あなたは日本の匿名掲示板（2ちゃんねる風）の住民たちをシミュレートします。
+スレタイ: ${th.title}
+現在のレス数: ${total}
+${from>0?"（古いレスは省略）\n":""}
+直近のレス:
+${recent}
+
+次の3〜5件程度の新しいレスを、複数の別々の住民として書いてください。${focus}
+ルール:
+- 2ch風の口調（「〜だろ」「〜やん」「ワロタ」「草」「それな」「ｗ」など）。ただし中身は温かみや機知があり、話題にちゃんと反応すること。
+- 一部のレスは「>>番号」で既存レスに安価を付ける（番号は1〜${total}の範囲）。新規レスどうしの参照は不可。
+- 情報提供、ツッコミ、共感、雑談、ネタなど多様な反応を混ぜる。短文中心、長くても150字程度。直近のレスと同じ内容の繰り返しは避ける。
+- 差別、誹謗中傷、個人攻撃、性的・暴力的な内容、実在人物への攻撃は書かない。
+- 各レスの "who" は 0〜${RESIDENTS-1} の整数（同じ番号は同じ住民。口調や立場をスレ内で一貫させる）。イッチのふりはしない。
+出力は次の形式のJSON配列のみ。説明文やコードブロックは付けない:
+[{"who":0,"text":"..."},{"who":3,"text":">>${total} ..."}]`;
+}
+function parseReplies(t){
+  t=String(t).replace(/<think>[\s\S]*?<\/think>/g,"").replace(/```(?:json)?/g,"").trim();
+  let a=null;
+  try{a=JSON.parse(t)}catch(e){const m=t.match(/\[[\s\S]*\]/);if(m){try{a=JSON.parse(m[0])}catch(e2){}}}
+  if(a&&!Array.isArray(a)&&typeof a==="object")a=Object.values(a).find(Array.isArray)||null;
+  if(!Array.isArray(a))throw new Error("parse");
+  const out=a.filter(x=>x&&typeof x.text==="string"&&x.text.trim()).slice(0,6);
+  if(!out.length)throw new Error("parse");
+  return out;
+}
+async function callLLM(prompt,c,json=true){
+  c=c||{prov:conf.prov,key:curKey(),model:curModel()};
+  const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),90000);
+  let r;
+  try{
+    if(c.prov==="gemini"){
+      const gen={temperature:1};if(json)gen.responseMimeType="application/json";
+      r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(c.model)+":generateContent",{method:"POST",signal:ctl.signal,headers:{"Content-Type":"application/json","x-goog-api-key":c.key},body:JSON.stringify({contents:[{role:"user",parts:[{text:prompt}]}],generationConfig:gen})});
+    }else{
+      const base=c.prov==="groq"?"https://api.groq.com/openai/v1":"https://openrouter.ai/api/v1";
+      const h={"Content-Type":"application/json","Authorization":"Bearer "+c.key};
+      if(c.prov==="openrouter"){h["X-Title"]="AI Channel BBS"}
+      r=await fetch(base+"/chat/completions",{method:"POST",signal:ctl.signal,headers:h,body:JSON.stringify({model:c.model,temperature:1,messages:[{role:"user",content:prompt}]})});
+    }
+  }catch(e){clearTimeout(timer);throw new Error(e&&e.name==="AbortError"?"AIの応答に時間がかかりすぎたため中断しました。もう一度「住民を呼ぶ」を押してください。":"通信に失敗しました。ネット接続を確認してください。")}
+  clearTimeout(timer);
+  if(!r.ok){
+    let detail="";try{const j=await r.json();detail=(j.error&&(j.error.message||j.error))||"";if(typeof detail!=="string")detail=JSON.stringify(detail)}catch(e){}
+    detail=detail?"\n詳細: "+String(detail).slice(0,200):"";
+    if(r.status===429)throw new Error("無料枠の上限に達したか、短時間に送りすぎました。少し待つか、無料（内蔵）モードに切り替えてください。"+detail);
+    if([400,401,403].includes(r.status))throw new Error("APIキーかモデル名が正しくありません（"+r.status+"）。設定を確認してください。"+detail);
+    if(r.status===404)throw new Error("モデルが見つかりません（404）。設定のモデル名を空欄にして標準に戻してみてください。"+detail);
+    throw new Error("AIがエラーを返しました（"+r.status+"）。時間をおいて試してください。"+detail);
+  }
+  const d=await r.json();
+  const text=c.prov==="gemini"?(d.candidates?.[0]?.content?.parts||[]).filter(p=>!p.thought).map(p=>p.text||"").join(""):(d.choices?.[0]?.message?.content||"");
+  if(!text){const why=d.promptFeedback?.blockReason||d.candidates?.[0]?.finishReason||"";throw new Error("AIが返事をしませんでした"+(why?"（"+why+"）":"")+"。書き込み内容を変えて試してください。")}
+  return text;
+}
+
+/* ---------- 書き込み ---------- */
+function updateBusy(){$("send").disabled=busy;$("callBtn").disabled=busy;$("typing").hidden=!busy||!cur||cur.id!==busyId}
+let busyId=null;
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+async function summon(th){
+  if(busy)return;
+  if(mode==="ai"&&!curKey()){openCfg();$("err").textContent="先に設定でAPIキーを入力してください（または「モード」を押して無料モードに）。";return}
+  busy=true;busyId=th.id;$("err").textContent="";updateBusy();
+  try{
+    const list=mode==="local"?localReplies(th):parseReplies(await callLLM(buildPrompt(th)));
+    for(const x of list){
+      await wait(500+Math.random()*900);
+      if(!byId(th.id))break; // 途中でスレが削除された
+      const w=Math.max(0,Math.min(RESIDENTS-1,Math.floor(+x.who)||0));
+      th.posts.push({name:"",text:x.text.trim().slice(0,1000),time:stamp(),id:th.ids[w]});
+      th.updated=Date.now();saveAll();appendPost(th);
+    }
+  }catch(e){
+    $("err").textContent=e&&e.message&&e.message!=="parse"?e.message:"AIの返事を読み取れませんでした。「住民を呼ぶ」でもう一度試してください。";
+  }
+  busy=false;busyId=null;updateBusy();
+}
+$("send").onclick=()=>{
+  if(busy||!cur)return;const t=$("msg").value.trim();if(!t){$("msg").focus();return}
+  const th=cur,nm=$("name").value.trim();LS.set("aibbs_name",nm);
+  th.posts.push({name:nm,text:t,time:stamp(),id:th.me});th.updated=Date.now();
+  $("msg").value="";LS.del("aibbs_draft");saveAll();
+  appendPost(th);window.scrollTo({top:document.documentElement.scrollHeight,behavior:"smooth"});
+  summon(th);
+};
+$("callBtn").onclick=()=>{if(cur)summon(cur)};
+$("msg").addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key==="Enter"){e.preventDefault();$("send").click()}});
+$("msg").addEventListener("input",()=>LS.set("aibbs_draft",$("msg").value));
+$("name").value=LS.get("aibbs_name")||"";
+$("msg").value=LS.get("aibbs_draft")||"";
+
+/* ---------- スレ管理 ---------- */
+function openStart(){$("start").hidden=false;$("tTitle").focus();$("start").scrollIntoView({behavior:"smooth",block:"start"})}
+function closeStart(){$("start").hidden=true}
+$("newBtn").onclick=()=>{if($("start").hidden)openStart();else closeStart()};
+$("startCancel").onclick=closeStart;
+$("homeBtn").onclick=()=>{location.hash=""};
+$("startBtn").onclick=()=>{
+  const t=$("tTitle").value.trim(),b=$("tBody").value.trim();
+  if(!t){$("tTitle").focus();$("tTitle").placeholder="スレタイを入力してください";return}
+  if(!b){$("tBody").focus();$("tBody").placeholder="本文を入力してください";return}
+  const me=rid(),th={id:uid(),title:t,ids:Array.from({length:RESIDENTS},rid),me,updated:Date.now(),posts:[{name:$("name").value.trim(),text:b,time:stamp(),id:me}]};
+  threads.push(th);saveAll();
+  $("tTitle").value="";$("tBody").value="";closeStart();
+  location.hash="#/t/"+th.id;renderThread(th);summon(th);
+};
+$("tBody").addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key==="Enter"){e.preventDefault();$("startBtn").click()}});
+function removeThread(th){
+  if(!confirm("「"+th.title+"」を削除しますか？\n元に戻せません。"))return;
+  threads=threads.filter(t=>t!==th);saveAll();
+  if(cur===th)location.hash="";else renderHome();
+}
+$("clearBtn").onclick=()=>{if(cur)removeThread(cur)};
+$("topBtn").onclick=()=>scrollTo({top:0,behavior:"smooth"});
+
+/* ---------- 書き出し・読み込み ---------- */
+$("expBtn").onclick=()=>{
+  const blob=new Blob([JSON.stringify({app:"aibbs",version:2,threads},null,1)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  const d=new Date();a.download=`aichannel-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}.json`;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  $("dMsg").className="ok";$("dMsg").textContent=threads.length+"件のスレを保存しました。";
+};
+$("impBtn").onclick=()=>$("impFile").click();
+$("impFile").onchange=async()=>{
+  const f=$("impFile").files[0];$("impFile").value="";if(!f)return;
+  try{
+    const j=JSON.parse(await f.text());const list=(Array.isArray(j)?j:j.threads||[j]).map(fix).filter(Boolean);
+    if(!list.length)throw new Error();
+    let add=0,upd=0;
+    list.forEach(t=>{const i=threads.findIndex(x=>x.id===t.id);if(i<0){threads.push(t);add++}else if(t.posts.length>=threads[i].posts.length){threads[i]=t;upd++}});
+    saveAll();$("dMsg").className="ok";$("dMsg").textContent=`読み込みました（追加${add}件・更新${upd}件）。`;route();
+  }catch(e){$("dMsg").className="err";$("dMsg").textContent="このファイルは読み込めませんでした。"}
+};
+
+/* ---------- テーマ ---------- */
+const savedTheme=LS.get("aibbs_theme");if(savedTheme)document.documentElement.dataset.theme=savedTheme;
+$("themeBtn").onclick=()=>{const r=document.documentElement;const dark=r.dataset.theme?r.dataset.theme==="dark":matchMedia("(prefers-color-scheme:dark)").matches;r.dataset.theme=dark?"light":"dark";LS.set("aibbs_theme",r.dataset.theme)};
+
+/* ---------- 起動 ---------- */
+addEventListener("storage",e=>{if(e.key==="aibbs_threads"&&!busy){loadAll();route()}});
+setMode(mode);
+loadAll();
+route();
+if(!threads.length)openStart();
+</script>
+</body>
+</html>

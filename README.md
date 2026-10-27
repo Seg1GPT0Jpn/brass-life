@@ -180,3 +180,9 @@ lib/
 ## ライセンス
 
 - 同梱フォント: BIZ UDPGothic（SIL Open Font License 1.1、`assets/fonts/OFL.txt`）
+
+## おまけ：AIちゃんねる（`web/ai-bbs/`）
+
+書き込むと AI 住民がレスを付けてくれる、1 ファイルだけの掲示板です（ゲーム本体とは独立）。
+`web/ai-bbs/index.html` をブラウザで直接開くか、GitHub Pages 公開後は `/<リポジトリ名>/ai-bbs/` で使えます。
+スレはブラウザ内（localStorage）に保存され、設定画面からファイルへの書き出し・読み込みができます。
